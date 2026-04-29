@@ -28,11 +28,11 @@ from kivy.config import Config
 from kivy.core.window import Window
 
 # --- PYINSTALLER ASSET FIX ---
-if hasattr(sys, '_MEIPASS'):
-    # Tell Kivy to look in the hidden pyInstaller temp folder for assets
-    resource_add_path(os.path.join(sys._MEIPASS))
-    # Also add the specific assets folder just in case
-    resource_add_path(os.path.join(sys._MEIPASS, "assets"))
+# if hasattr(sys, '_MEIPASS'):
+#     # Tell Kivy to look in the hidden pyInstaller temp folder for assets
+#     resource_add_path(os.path.join(sys._MEIPASS))
+#     # Also add the specific assets folder just in case
+#     resource_add_path(os.path.join(sys._MEIPASS, "assets"))
 # ------------------------------
 
 IS_RASPBERRY_PI = platform.machine() in ("aarch64", "armv7l")

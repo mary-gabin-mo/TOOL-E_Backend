@@ -48,6 +48,7 @@ PIN_BUZZER        = 23
 # Load Cell Calibration
 LOAD_CELL_THRESHOLD = 2000.0  # Minimum weight (raw number) to trigger "Tool Detected"
 LOAD_CELL_DEBOUNCE  = 2.0   # Seconds weight must be stable
+LOAD_CELL_RETRIGGER_COOLDOWN_SEC = float(os.getenv("LOAD_CELL_RETRIGGER_COOLDOWN_SEC", "5.0"))
 AUTO_TARE_ENABLED = os.getenv("AUTO_TARE_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on")
 AUTO_TARE_INTERVAL_SEC = float(os.getenv("AUTO_TARE_INTERVAL_SEC", "300"))
 AUTO_TARE_QUIET_IDLE_SEC = float(os.getenv("AUTO_TARE_QUIET_IDLE_SEC", "30"))

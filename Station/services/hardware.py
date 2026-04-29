@@ -27,6 +27,7 @@ from config import (
     PIN_LED_GREEN, PIN_LED_RED, PIN_LED_YELLOW,
     PIN_BUZZER,
     LOAD_CELL_THRESHOLD,
+    LOAD_CELL_RETRIGGER_COOLDOWN_SEC,
     CARD_READER_POWER_ON_CMD,
     CARD_READER_POWER_OFF_CMD,
 )
@@ -56,6 +57,9 @@ class HardwareManager(EventDispatcher):
         # OPTIMIZATION: Adjusted stable reads for lower polling frequency
         # At 5Hz (0.2s), 2 reads = ~0.4s debounce (was 3 reads @ 10Hz = ~0.3s)
         self.STABLE_READS_REQUIRED = 2
+        self.POLL_INTERVAL_SEC = 0.2
+        self.RETRIGGER_COOLDOWN_POLLS = max(self.STABLE_READS_REQUIRED, int(round(LOAD_CELL_RETRIGGER_COOLDOWN_SEC / self.POLL_INTERVAL_SEC)))
+        self.RETRIGGER_DELAY_POLLS = self.RETRIGGER_COOLDOWN_POLLS - self.STABLE_READS_REQUIRED
         self.poll_counter = 0  # For periodic debug output
         
         if self.is_pi:
@@ -101,7 +105,7 @@ class HardwareManager(EventDispatcher):
             # OPTIMIZATION: Reduce polling frequency from 10Hz (0.1s) to 5Hz (0.2s)
             # This keeps responsiveness while cutting CPU usage in half
             print("[HARDWARE] Starting load cell polling (0.2s interval - optimized)...")
-            Clock.schedule_interval(self._poll_load_cell, 0.2)
+            Clock.schedule_interval(self._poll_load_cell, self.POLL_INTERVAL_SEC)
             print("[HARDWARE] Load cell polling scheduled successfully!")
 
         except ImportError:
@@ -233,7 +237,7 @@ class HardwareManager(EventDispatcher):
             self.dispatch('on_load_cell_detect', current_weight)
             # Reset stable reads so we don't trigger 30 times a second while object sits there
             # Or you can add logic to wait for removal before triggering again.
-            self.stable_reads = -50 # Simple "debounce" delay
+            self.stable_reads = -self.RETRIGGER_DELAY_POLLS
         
     def _check_pcsc_reader(self, dt):
         # Hard safety guard: only read cards while welcome screen is active.

@@ -16,7 +16,7 @@ import importlib
 import os
 import platform
 import logging
-from kivy import resource_add_path
+# from kivy import resource_add_path
 
 # --- Suppress library debug logging ---
 logging.getLogger('picamera2').setLevel(logging.WARNING)

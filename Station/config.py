@@ -67,7 +67,6 @@ CARD_READER_POWER_OFF_CMD = os.getenv("CARD_READER_POWER_OFF_CMD", "").strip()
 # Paths
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), 'assets')
 LOGO_PATH  = os.path.join(ASSETS_DIR, '/images/logo_black.png')
-FONT_PATH  = os.path.join(ASSETS_DIR, 'fonts')
 
 # # Camera ##### NEED #####
 # # Resolution for the "Live Feed" preview (keep low for performance)

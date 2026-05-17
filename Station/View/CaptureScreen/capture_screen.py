@@ -71,8 +71,18 @@ class CaptureScreen(BaseScreen):
         if hasattr(app, 'hardware'):
             if hasattr(app.hardware, 'set_led_state'):
                 app.hardware.set_led_state('transaction')
+            if hasattr(app.hardware, 'reset_load_cell_detection_state'):
+                app.hardware.reset_load_cell_detection_state(armed=False)
             print("[DEBUG] Binding on_load_cell_detect")
+            try:
+                app.hardware.unbind(on_load_cell_detect=self.handle_load_cell_trigger)
+            except Exception:
+                pass
             app.hardware.bind(on_load_cell_detect=self.handle_load_cell_trigger)
+
+            if hasattr(app.hardware, 'tare_load_cell'):
+                print("[DEBUG] Starting load cell tare")
+                threading.Thread(target=app.hardware.tare_load_cell, daemon=True).start()
 
         # 3. Start camera in background
         # Guard against camera drivers hanging forever when hardware is missing.
@@ -143,7 +153,12 @@ class CaptureScreen(BaseScreen):
         app = App.get_running_app()
 
         if hasattr(app, 'hardware'):
-            app.hardware.unbind(on_load_cell_detect=self.handle_load_cell_trigger)
+            try:
+                app.hardware.unbind(on_load_cell_detect=self.handle_load_cell_trigger)
+            except Exception:
+                pass
+            if hasattr(app.hardware, 'reset_load_cell_detection_state'):
+                app.hardware.reset_load_cell_detection_state(armed=False)
 
         if self.update_event:
             self.update_event.cancel()

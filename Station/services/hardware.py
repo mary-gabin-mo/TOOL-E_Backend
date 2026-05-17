@@ -28,6 +28,9 @@ from config import (
     PIN_BUZZER,
     LOAD_CELL_THRESHOLD,
     LOAD_CELL_RETRIGGER_COOLDOWN_SEC,
+    AUTO_TARE_ENABLED,
+    AUTO_TARE_SAMPLES,
+    AUTO_TARE_SAMPLE_DELAY_SEC,
     CARD_READER_POWER_ON_CMD,
     CARD_READER_POWER_OFF_CMD,
 )
@@ -54,6 +57,8 @@ class HardwareManager(EventDispatcher):
         self.lgpio_handle = None
         self.stable_reads = 0
         self.offset = 499750 # weight of the bed in raw number
+        self._load_cell_trigger_armed = True
+        self._load_cell_below_threshold_reads = 0
         # OPTIMIZATION: Adjusted stable reads for lower polling frequency
         # At 5Hz (0.2s), 2 reads = ~0.4s debounce (was 3 reads @ 10Hz = ~0.3s)
         self.STABLE_READS_REQUIRED = 2
@@ -220,16 +225,26 @@ class HardwareManager(EventDispatcher):
         
         # Print status every 10 polls (1 second)
         if self.poll_counter % 10 == 0:
-            print(f"[LOADCELL] Raw: {raw_val}, Weight: {current_weight}, Threshold: {LOAD_CELL_THRESHOLD}, Stable: {self.stable_reads}/{self.STABLE_READS_REQUIRED}")
+            print(
+                f"[LOADCELL] Raw: {raw_val}, Weight: {current_weight}, "
+                f"Threshold: {LOAD_CELL_THRESHOLD}, Stable: {self.stable_reads}/{self.STABLE_READS_REQUIRED}, "
+                f"Armed: {self._load_cell_trigger_armed}, Below: {self._load_cell_below_threshold_reads}"
+            )
 
         # Check Threshold
         if current_weight > LOAD_CELL_THRESHOLD:
+            self._load_cell_below_threshold_reads = 0
+            if not self._load_cell_trigger_armed:
+                return
             self.stable_reads += 1
         else:
             self.stable_reads = 0
+            self._load_cell_below_threshold_reads += 1
+            if self._load_cell_below_threshold_reads >= self.STABLE_READS_REQUIRED:
+                self._load_cell_trigger_armed = True
 
         # Trigger Event
-        if self.stable_reads >= self.STABLE_READS_REQUIRED:
+        if self._load_cell_trigger_armed and self.stable_reads >= self.STABLE_READS_REQUIRED:
             print(f"\n{'='*60}")
             print(f"[HARDWARE] **OBJECT DETECTED!**")
             print(f"[HARDWARE] Weight: {current_weight} (raw: {raw_val})")
@@ -238,7 +253,44 @@ class HardwareManager(EventDispatcher):
             self.dispatch('on_load_cell_detect', current_weight)
             # Reset stable reads so we don't trigger 30 times a second while object sits there
             # Or you can add logic to wait for removal before triggering again.
-            self.stable_reads = -self.RETRIGGER_DELAY_POLLS
+            self.stable_reads = 0
+            self._load_cell_trigger_armed = False
+            self._load_cell_below_threshold_reads = 0
+
+    def reset_load_cell_detection_state(self, armed=True):
+        """Reset the load-cell trigger state without changing the calibration offset."""
+        self.stable_reads = 0
+        self._load_cell_below_threshold_reads = 0
+        self._load_cell_trigger_armed = armed
+
+    def tare_load_cell(self, samples=AUTO_TARE_SAMPLES, sample_delay=AUTO_TARE_SAMPLE_DELAY_SEC):
+        """Recalculate the current empty-bed offset from several raw samples."""
+        if not AUTO_TARE_ENABLED:
+            return False
+        if not self.lgpio_handle:
+            return False
+
+        try:
+            import time
+
+            readings = []
+            for _ in range(max(1, int(samples))):
+                raw_val = self._read_hx711_raw()
+                if raw_val is not None:
+                    readings.append(raw_val)
+                time.sleep(max(0.0, float(sample_delay)))
+
+            if not readings:
+                print("[HARDWARE] Tare skipped: no valid load-cell readings")
+                return False
+
+            self.offset = sum(readings) / len(readings)
+            self.reset_load_cell_detection_state(armed=True)
+            print(f"[HARDWARE] Load cell tared. New offset: {self.offset:.2f} from {len(readings)} samples")
+            return True
+        except Exception as e:
+            print(f"[HARDWARE] Tare failed: {e}")
+            return False
         
     def _check_pcsc_reader(self, dt):
         # Hard safety guard: only read cards while welcome screen is active.

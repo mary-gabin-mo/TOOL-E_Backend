@@ -52,6 +52,9 @@ class ToolSelectionScreen(BaseScreen):
         super().__init__(**kwargs)
         self._expanded_tool_id = None
         self._preview_cache = {}
+        self._thumbnail_preview_height = 84
+        self._expanded_preview_height = 220
+        self._base_row_height = 92
     
     def on_enter (self):
         """Called every time the screen is displayed."""
@@ -113,14 +116,16 @@ class ToolSelectionScreen(BaseScreen):
             # 3. Create items
             for tool_obj in all_tools:
                 preview_source = self._materialize_preview_image(tool_obj)
+                has_preview = bool(preview_source)
+                preview_height = self._thumbnail_preview_height if has_preview else 0
                 rv_data.append({
                     "text": f"{tool_obj['name']}",
                     "secondary_text": "",
                     "tool_data": tool_obj,
                     "bg_color": [1, 1, 1, 1],
                     "preview_source": preview_source,
-                    "preview_height": 0,
-                    "row_height": 92,
+                    "preview_height": preview_height,
+                    "row_height": self._base_row_height + preview_height,
                 })
 
             # 4. Add "Other" Option to the bottom
@@ -132,7 +137,7 @@ class ToolSelectionScreen(BaseScreen):
                 "bg_color": [1, 1, 1, 1],
                 "preview_source": "",
                 "preview_height": 0,
-                "row_height": 92,
+                "row_height": self._base_row_height,
             })
             
             tool_rv.data = rv_data
@@ -160,18 +165,19 @@ class ToolSelectionScreen(BaseScreen):
         for i, item in enumerate(rv.data):
             item_id = item.get('tool_data', {}).get('id')
             has_preview = bool(item.get('preview_source'))
+            default_preview_height = self._thumbnail_preview_height if has_preview else 0
             if item_id == selected_id:
                 rv.data[i]['bg_color'] = [0.86, 0.93, 1, 1]
                 if self._expanded_tool_id == item_id and has_preview:
-                    rv.data[i]['preview_height'] = 220
-                    rv.data[i]['row_height'] = 312
+                    rv.data[i]['preview_height'] = self._expanded_preview_height
+                    rv.data[i]['row_height'] = self._base_row_height + self._expanded_preview_height
                 else:
-                    rv.data[i]['preview_height'] = 0
-                    rv.data[i]['row_height'] = 92
+                    rv.data[i]['preview_height'] = default_preview_height
+                    rv.data[i]['row_height'] = self._base_row_height + default_preview_height
             else:
                 rv.data[i]['bg_color'] = [1, 1, 1, 1]
-                rv.data[i]['preview_height'] = 0
-                rv.data[i]['row_height'] = 92
+                rv.data[i]['preview_height'] = default_preview_height
+                rv.data[i]['row_height'] = self._base_row_height + default_preview_height
         
         rv.refresh_from_data()
 
@@ -209,7 +215,11 @@ class ToolSelectionScreen(BaseScreen):
             ext = ".webp"
 
         try:
-            image_bytes = base64.b64decode(encoded, validate=True)
+            cleaned = "".join(encoded.split())
+            missing_padding = len(cleaned) % 4
+            if missing_padding:
+                cleaned += "=" * (4 - missing_padding)
+            image_bytes = base64.b64decode(cleaned)
         except Exception:
             return ""
 

@@ -113,7 +113,8 @@ class HardwareManager(EventDispatcher):
             self.lgpio_handle = None
         except Exception as e:
             print(f"[ERROR] GPIO Setup failed: {e}")
-            print(f"[ERROR] Full traceback: ", exc_info=True)
+            print(f"[ERROR] Full traceback:")
+            traceback.print_exc()
             self.lgpio_handle = None
         
         # implement GPIO setup...

@@ -1,3 +1,13 @@
+"""
+PURPOSE:
+Handles user validation against Makerspace records and admin web login.
+
+API ENDPOINTS OWNED:
+- POST /validate_user
+- POST /api/auth/login
+
+"""
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
 from app.models import UserRequest, ValidateUserResponse, UserDetails, LoginPayload, LoginResponse, LoginUser
@@ -35,7 +45,7 @@ async def validate_user_route(request: UserRequest):
         email = user[2]
         try:
              found_ucid = int(user[3])
-        except:
+        except (ValueError, TypeError):
              found_ucid = 0
              
         waiver_date = user[5]        

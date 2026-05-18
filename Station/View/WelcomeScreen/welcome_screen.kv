@@ -1,97 +1,143 @@
-<WelcomeScreen>:
-    md_bg_color: 1, 1, 1, 1  # White background
+<WelcomeActionButton@AppButton>:
+    background_normal: ''
+    background_down: ''
+    background_color: 0, 0, 0, 0
+    color: 0.35, 0.35, 0.35, 1
+    canvas.before:
+        # Soft shadow behind button body
+        Color:
+            rgba: 0, 0, 0, 0.16
+        RoundedRectangle:
+            pos: self.x, self.y - 3
+            size: self.size
+            radius: [22, 22, 22, 22]
 
-    MDBoxLayout:
+        # Main fill with pressed-state feedback
+        Color:
+            rgba: (0.74, 0.74, 0.74, 1) if self.state == 'down' else (0.90, 0.90, 0.90, 1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [22, 22, 22, 22]
+    canvas.after:
+        # Border stroke to define edges
+        Color:
+            rgba: (0.55, 0.55, 0.55, 1) if self.state == 'down' else (0.68, 0.68, 0.68, 1)
+        Line:
+            width: 1.4
+            rounded_rectangle: (self.x, self.y, self.width, self.height, 22, 22, 22, 22, 120)
+
+<WelcomeScreen>:
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1  # White background
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
         orientation: 'vertical'
-        padding: "40dp"
-        spacing: "30dp"
+        padding: "36dp"
+        spacing: "20dp"
         pos_hint: {"center_x": .5, "center_y": .5}
 
         # -- Logo Area Placeholder --
         Widget:
-            size_hint_y: 0.45
-            
+            size_hint_y: 0.07
+
         # --- Status Container (swaps between Text and Loading) ---
-        MDBoxLayout:
+        BoxLayout:
             id: status_container
             orientation: 'vertical'
-            size_hint_y: 0.4
-            spacing: "10dp"
+            size_hint_y: None
+            height: "120dp"
+            spacing: "14dp"
             pos_hint: {"center_x": .5}
-            
+
             # STATE A: Normal Text (Default)
-            MDBoxLayout:
+            BoxLayout:
                 id: instruction_box
                 orientation: 'vertical'
+                spacing: "100dp"
                 opacity: 1  # Visible
-                
-                MDLabel:
+
+                Label:
                     text: "Checkout / Return Tools Here"
                     halign: "center"
-                    font_style: "H4"
+                    font_size: "34sp"
                     bold: True
-                    theme_text_color: "Primary"
-                    
-                
-                MDLabel:
+                    color: 0, 0, 0, 1
+                    size_hint_y: None
+                    height: "250dp"
+                    text_size: self.width, None
+                    valign: "middle"
+
+                Label:
                     text: "Please TAP your UNICARD to begin"
                     halign: "center"
-                    font_style: "H5"
-                    theme_text_color: "Secondary"
-                    # pos_hint: {"top": 0.5, "center_x": .5}
-                    
-            # STATE B: Loading Animation (Hidden by default)
-            MDBoxLayout:
+                    font_size: "38sp"
+                    color: 0.5, 0.5, 0.5, 1
+                    size_hint_y: None
+                    height: "220dp"
+                    text_size: self.width, None
+                    valign: "middle"
+
+            # STATE B: Loading (Hidden by default)
+            BoxLayout:
                 id: loading_box
                 orientation: 'vertical'
                 opacity: 0  # Hidden
                 size_hint_y: None
-                height: "0dp" # Collapse height so it doesn't take space
+                height: "0dp"  # Collapse height so it doesn't take space
                 spacing: "20dp"
-                
-                MDSpinner: 
+
+                Label:
                     id: loading_spinner
+                    text: "..."
+                    halign: "center"
+                    font_size: "36sp"
+                    color: 0.9, 0.17, 0.25, 1  # Red
                     size_hint: None, None
                     size: "60dp", "60dp"
                     pos_hint: {'center_x': .5}
-                    active: False # Stop animation by default
-                    palette: [ [0.9, 0.17, 0.25, 1] ] # Red
-                    
-                MDLabel:
+
+                Label:
                     text: "Verifying User..."
                     halign: "center"
-                    font_style: "H5"
-                    theme_text_color: "Primary"
+                    font_size: "36sp"
+                    color: 0, 0, 0, 1
 
         # -- Spacer --
         Widget:
-            size_hint_y: 0.15
-            
+            size_hint_y: None
+            height: "44dp"
+
         # -- Footer Buttons --
-        MDBoxLayout:
+        BoxLayout:
             id: footer_buttons
-            orientation: 'vertical'
-            size_hint_y: 0.2
-            spacing: "10dp"
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: "118dp"
+            spacing: "18dp"
 
-            # -- DEV BUTTON --
-            MDFillRoundFlatButton:
-                text: "DEV - SCAN CARD"
-                font_size: "20sp"
-                size_hint: 0.4, 0.1
-                pos_hint: {"center_x": .5}
-                md_bg_color: 0.4, 0.4, 0.4, 1  # Red
-                # move on to the next page
-                on_release: root.go_to('action selection screen')
+        # -- Manual Entry Button --
+        WelcomeActionButton:
+            text: "MANUAL UCID ENTRY"
+            font_size: "28sp"
+            size_hint: .5, None
+            height: "80dp"
+            pos_hint: {"center_x": .5}
+            on_release: root.go_to('manual entry screen')
 
-            # -- Manual Entry Button --
-            MDFillRoundFlatButton:
-                text: "MANUAL UCID ENTRY"
-                font_size: "24sp"
-                size_hint: 0.6, 0.1
-                pos_hint: {"center_x": .5}
-                md_bg_color: 0.9, 0.17, 0.25, 1  # Red
-                on_release: root.go_to('manual entry screen')
-            
-            # Widget:
-            #     size_hint_y: 0.01
+        # -- Spacer --
+        Widget:
+            size_hint_y: 0.02
+    
+    # -- Quit Button --
+    AppButton:
+        text: "QUIT"
+        font_size: "15sp"
+        size_hint: None, None
+        size: "80dp", "45dp"
+        pos_hint: {"right": 0.98, "top": 0.13} # bottom right
+        on_release: root.exit_program()

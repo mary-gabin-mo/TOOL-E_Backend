@@ -1,10 +1,24 @@
-from kivy.app import App
-from kivymd.uix.screen import MDScreen
+"""
+PURPOSE:
+Shared base class for Station screens with common navigation helpers.
 
-class BaseScreen(MDScreen):
+RUNTIME ROLE:
+- Standardizes forward/back navigation behavior and transaction cancel flow.
+- Parent class inherited by most screen implementations.
+
+API ENDPOINTS USED:
+- None directly.
+"""
+
+from kivy.app import App
+from kivy.uix.screenmanager import Screen
+from View.components.user_info_footer import UserInfoFooter
+
+class BaseScreen(Screen):
     """
     Parent class for all screens.
     Includes helper methods for navigation.
+    All screens should include the UserInfoFooter at the bottom.
     """
     
     def go_to(self, screen_name):

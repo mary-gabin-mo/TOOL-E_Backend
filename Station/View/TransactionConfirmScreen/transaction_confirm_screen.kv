@@ -1,134 +1,318 @@
-<TransactionConfirmScreen>:
-    md_bg_color: 1, 1, 1, 1  # White background
+# Custom BorderedBox: BoxLayout with ButtonBehavior + dynamic border/background color
+<BorderedBox>:
+    canvas.before:
+        Color:
+            rgba: self.bg_color
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [10, 10, 10, 10]
+        Color:
+            rgba: self.line_color
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, 10, 10, 10, 10, 100)
+            width: 2
 
-    MDBoxLayout:
+<ReadonlyToolListItem@Label>:
+    size_hint_y: None
+    height: '56dp'
+    color: 0, 0, 0, 1
+    halign: 'center'
+    valign: 'middle'
+    font_size: '26sp'
+    text_size: self.size
+    padding: '14dp', '0dp'
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    canvas.after:
+        Color:
+            rgba: 0.78, 0.78, 0.78, 1
+        Line:
+            width: 1
+            rectangle: (self.x, self.y, self.width, self.height)
+
+<TransactionConfirmScreen>:
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1  # White background
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
         orientation: 'vertical'
-        padding: "40dp"
-        spacing: "30dp"
+        padding: "50dp"
+        spacing: "40dp"
         pos_hint: {"center_x": .5, "center_y": .5}
 
         # --- Logo Area Placeholder ---
         Widget:
-            size_hint_y: 0.3
+            size_hint_y: 0.1
 
         # --- Title ---
-        MDLabel:
+        Label:
             text: "Confirm Transaction"
             halign: "center"
-            font_style: "H5"
+            valign: "middle"
+            text_size: self.size
+            font_size: "44sp"
             bold: True
             size_hint_y: None
-            height: '40dp'
+            height: '62dp'
+            color: 0, 0, 0, 1
 
         # Central card
-        MDCard:
+        BoxLayout:
             orientation: 'vertical'
             padding: '15dp'
-            spacing: '15dp'
-            size_hint: .8, .6 # 80% width, fill remaining height
+            spacing: '12dp'
+            size_hint: 1, .7  # Wider card so purpose buttons can be wider
             pos_hint: {"center_x": .5}
-            radius: [15, 15, 15, 15]
-            elevation: 3
-            md_bg_color: 1, 1, 1, 1
+            canvas.before:
+                Color:
+                    rgba: 1, 1, 1, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [15, 15, 15, 15]
 
             # 1. Scanned Items Header
-            MDLabel:
-                text: "Items to Return"
+            Label:
+                text: "Items to Checkout"
                 halign: "center"
-                font_style: "H6"
-                theme_text_color: "Secondary"
+                valign: "middle"
+                text_size: self.size
+                font_size: "30sp"
+                color: 0.5, 0.5, 0.5, 1
                 size_hint_y: None
-                height: "30dp"
+                height: "44dp"
 
             # 2. Scrollable List of Tools
-            MDScrollView:
-                size_hint_y: 0.5 # Take up 50% of the card height
-                bar_width: '10dp'
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: 1.0, 0.85
+                padding: '5dp'
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [10, 10, 10, 10]
+                    Color:
+                        rgba: 0.4, 0.4, 0.4, 1
+                    Line:
+                        rounded_rectangle: (self.x, self.y, self.width, self.height, 10, 10, 10, 10, 100)
+                        width: 1.5
 
-                MDList:
-                    id: tool_list_container
-                    padding: 0
+                ScrollView:
+                    bar_width: '10dp'
+                    bar_color: 0.55, 0.55, 0.55, 0.95
+                    bar_inactive_color: 0.75, 0.75, 0.75, 0.55
+
+                    GridLayout:
+                        id: tool_list_container
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        # padding: [self.width * 0.1, 0, self.width * 0.1, 0]
             
-            # 2. Required Action: Date Selection Box
-            MDCard:
+            # --- Logo Area Placeholder ---
+            Widget:
+                size_hint_y: 0.01
+
+            # Purpose Selection Box
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                padding: "4dp", "10dp"
+                spacing: "8dp"
+
+                Label:
+                    text: "Purpose of Checkout"
+                    halign: "center"
+                    valign: "middle"
+                    text_size: self.size
+                    font_size: "30sp"
+                    color: 0.5, 0.5, 0.5, 1
+                    size_hint_y: None
+                    height: "38dp"
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: "52dp"
+                    spacing: "15dp"
+
+                    AppButton:
+                        id: btn_academic
+                        text: "Academic Course"
+                        font_size: "28sp"
+                        size_hint_x: 0.5
+                        background_normal: ''
+                        base_color: 0.9, 0.9, 0.9, 1
+                        color: 0, 0, 0, 1
+                        on_release: root.select_purpose("Academic Course")
+
+                    AppButton:
+                        id: btn_personal
+                        text: "Personal Project"
+                        font_size: "28sp"
+                        size_hint_x: 0.5
+                        background_normal: ''
+                        base_color: 0.9, 0.9, 0.9, 1
+                        color: 0, 0, 0, 1
+                        on_release: root.select_purpose("Personal Project")
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: "52dp"
+                    spacing: "15dp"
+
+                    AppButton:
+                        id: btn_team
+                        text: "Team"
+                        font_size: "28sp"
+                        size_hint_x: 0.6
+                        background_normal: ''
+                        base_color: 0.9, 0.9, 0.9, 1
+                        color: 0, 0, 0, 1
+                        on_release: root.select_purpose("Team")
+
+                    AppButton:
+                        id: btn_research
+                        text: "Research"
+                        font_size: "28sp"
+                        size_hint_x: 0.6
+                        background_normal: ''
+                        base_color: 0.9, 0.9, 0.9, 1
+                        color: 0, 0, 0, 1
+                        on_release: root.select_purpose("Research")
+
+                Widget:
+                    size_hint_y: None
+                    height: "8dp"
+
+                # Fixed-height slot prevents purpose buttons from shifting when input mode changes
+                FloatLayout:
+                    size_hint_y: None
+                    height: "60dp"
+
+                    # Course code input (shown only when Academic Course is selected)
+                    BoxLayout:
+                        id: course_code_box
+                        orientation: 'horizontal'
+                        size_hint: 1, 1
+                        pos_hint: {"x": 0, "y": 0}
+                        opacity: 0
+                        disabled: True
+                        spacing: "10dp"
+
+                        Label:
+                            text: "Course Code:"
+                            size_hint_x: 0.35
+                            font_size: "32sp"
+                            color: 0, 0, 0, 1
+                            halign: "right"
+                            valign: "middle"
+                            text_size: self.size
+
+                        CourseCodeInput:
+                            id: course_code_input
+                            hint_text: "e.g. ENEL500"
+                            font_size: "35sp"
+                            multiline: False
+                            size_hint_x: 0.65
+                            height: "48dp"
+                            on_text: root.on_course_code_changed(self.text)
+
+                    # Team name input (shown only when Team is selected)
+                    BoxLayout:
+                        id: team_name_box
+                        orientation: 'horizontal'
+                        size_hint: 1, 1
+                        pos_hint: {"x": 0, "y": 0}
+                        opacity: 0
+                        disabled: True
+                        spacing: "10dp"
+
+                        Label:
+                            text: "Team Name:"
+                            size_hint_x: 0.35
+                            font_size: "32sp"
+                            color: 0, 0, 0, 1
+                            halign: "right"
+                            valign: "middle"
+                            text_size: self.size
+
+                        TextInput:
+                            id: team_name_input
+                            hint_text: "Enter team name"
+                            font_size: "35sp"
+                            multiline: False
+                            size_hint_x: 0.65
+                            height: "48dp"
+                            on_text: root.on_team_name_changed(self.text)
+
+            # 3. Required Action: Date Selection Box
+            BorderedBox:
                 id: date_box
                 orientation: 'vertical'
-                size_hint_y: 0.2
-                radisu: [10, 10, 10, 10]
-                elevation: 0
-                md_bg_color: 0.95, 0.95, 0.95, 1
-                ripple_behavior: True
+                size_hint_y: None
+                height: "82dp"
+                bg_color: 0.95, 0.95, 0.95, 1
+                line_color: 1, 0, 0, 1  # Initial Red (Changed in Python code)
                 on_release: root.open_calendar()
 
-                # --- THE RED BORDER LOGIC ---
-                line_color: 1, 0, 0, 1 # Initial Red (Changed in Python code)
-                style: "outlined"
-                line_width: 2
-
-                MDLabel:
+                Label:
                     id: date_label
-                    text: "Tap to select Retrun Date"
+                    text: "Tap to select Return Date"
                     halign: "center"
                     valign: "center"
-                    theme_text_color: "Custom"
-                    text_color: 0.8, 0.2, 0.2, 1 # Red text initially
+                    font_size: "32sp"
+                    color: 0.8, 0.2, 0.2, 1  # Red text initially
 
-            # Spacer to push buttons down
-            Widget:
-                size_hint_y: 0.1
+            # # Keep only a tiny fixed gap before the action bar
+            # Widget:
+            #     size_hint_y: None
+            #     height: "6dp"
 
         # --- BOTTOM ACTION BAR ---
-        MDBoxLayout:
+        BoxLayout:
             orientation: 'horizontal'
             size_hint_y: None
-            height: '200dp'
+            height: '100dp'
             spacing: '20dp'
             padding: '10dp'
 
-            MDFillRoundFlatButton:
-                text: "CANCEL"
-                font_size: "20sp"
+            AppButton:
+                text: "BACK"
+                font_size: "32sp"
                 size_hint_x: 0.4
-                md_bg_color: 0.6, 0.6, 0.6, 1
-                on_release: root.cancel_transaction()
+                background_normal: ''
+                base_color: 0.4, 0.4, 0.4, 1
+                color: 1, 1, 1, 1
+                on_release: root.go_back('tool confirm screen')
 
-            MDFillRoundFlatButton:
+            AppButton:
                 id: confirm_finish_btn
                 text: "CONFIRM & FINISH"
-                font_size: '20sp'
+                font_size: '32sp'
                 size_hint_x: 0.6
-                disabled: True # Disabled until date selected
-                md_bg_color: 0.2, 0.7, 0.2, 1 # Green
+                disabled: True  # Disabled until date selected
+                background_normal: ''
+                base_color: 0.2, 0.7, 0.2, 1  # Green
+                down_color: 0.15, 0.6, 0.15, 1
+                color: 1, 1, 1, 1
                 on_release: root.finish_transaction()
 
-        # MDBoxLayout:
-        #     orientation: 'horizontal'
-        #     spacing: "20dp"             # Gap between buttons
-        #     size_hint_y: None           # Don't expand vertically
-        #     height: '80dp'              # Fixed height for this row
-        #     pos_hint: {"centre_x": .5}
-        #     padding: '10dp'             # Optional padding around the row
-
-        #     MDFillRoundFlatButton:
-        #         text: "DEV - BACK\n(Tool Confim Screen)"
-        #         font_size: "20sp"
-        #         size_hint: 0.3, 1        
-        #         md_bg_color: 0.4, 0.4, 0.4, 1  # Grey
-        #         on_release: root.go_back('tool confirm screen')
-
-        #     MDFillRoundFlatButton:
-        #         text: "DEV - NEXT\n(Return Date Screen)"
-        #         font_size: "20sp"
-        #         size_hint: 0.3, 1        
-        #         md_bg_color: 0.4, 0.4, 0.4, 1  # Grey
-        #         # on_release: root.go_to('return date screen') # add later
-
-        # # -- Cancel Button --
-        # MDFillRoundFlatButton:
-        #     text: "Cancel"
-        #     font_size: "24sp"
-        #     size_hint: 1, 0.01
-        #     pos_hint: {"center_x": .5}
-        #     md_bg_color: 0.9, 0.17, 0.25, 1  # Red
-        #     on_release: root.go_back('welcome screen')
+        Widget:
+            size_hint_y: None
+            height: "40dp"
 

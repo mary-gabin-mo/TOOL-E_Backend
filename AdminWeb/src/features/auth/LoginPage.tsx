@@ -1,3 +1,10 @@
+/**
+ * PURPOSE:
+ * Admin authentication page that collects credentials and starts a session.
+ *
+ * API ENDPOINTS USED:
+ * - POST /api/auth/login (via `login()` helper)
+ */
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Navigate } from 'react-router-dom';
@@ -10,10 +17,10 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
 
   const navigate = useNavigate();
-  const { login: setAuth, token } = useAuthStore();
+  const { login: setAuth, isAuthenticated } = useAuthStore();
 
   // Redirect if already logged in
-  if (token) {
+  if (isAuthenticated()) {
     return <Navigate to="/dashboard" replace />;
   }
 

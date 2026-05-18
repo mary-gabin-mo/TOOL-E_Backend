@@ -1,50 +1,76 @@
-<ManualEntryScreen>
-    md_bg_color: 1, 1, 1, 1  # White background
+<ManualEntryScreen>:
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1  # White background
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-    MDBoxLayout:
+    BoxLayout:
         orientation: 'vertical'
         padding: "20dp"
         spacing: "10dp"
 
-        # --- HEADER (Back Button + Title) ---
-        MDBoxLayout:
-            size_hint_y: 0.1
-            spacing: "20dp"
-            
-            MDIconButton:
-                icon: "arrow-left"
-                theme_text_color: "Custom"
-                text_color: 0, 0, 0, 1
-                pos_hint: {"center_y": .5}
-                on_release: root.back_to_main()
-
-            MDLabel:
-                text: "Enter UCID Manually"
-                font_style: "H5"
-                bold: True
-                pos_hint: {"center_y": .5}
+        # -- Logo Area Placeholder --
+        Widget:
+            size_hint_y: 0.20
 
         # --- DISPLAY AREA ---
-        MDBoxLayout:
+        BoxLayout:
+            id: input_box
             size_hint_y: 0.2
-            padding: "40dp", "0dp"
+            padding: "40dp", "5dp"
             
-            MDTextField:
+            TextInput:
                 id: ucid_input
                 hint_text: "Enter UCID Number"
                 text: ""
-                font_size: "48sp"
+                font_size: "44sp"
                 halign: "center"
-                readonly: True  # Vital: Prevents OS keyboard from popping up
-                mode: "fill"
-                radius: [10, 10, 0, 0]
+                valign: "center"
+                readonly: True
+                multiline: False
+                input_filter: 'int'
+                on_text: root._on_ucid_text_change(self.text)
+                on_text_validate: root.submit_ucid()
+                background_color: 1,1,1,1
+                foreground_color: 0,0,0,1
+                cursor_color: 0,0,0,1
+                size_hint_y: None
+                height: dp(62)
+
+        # --- LOADING AREA (matches card-tap validation feedback) ---
+        BoxLayout:
+            id: loading_box
+            orientation: 'vertical'
+            opacity: 0
+            size_hint_y: None
+            height: "0dp"
+            spacing: "10dp"
+
+            Label:
+                text: "..."
+                halign: "center"
+                font_size: "36sp"
+                color: 0.9, 0.17, 0.25, 1
+                size_hint_y: None
+                height: "40dp"
+
+            Label:
+                text: "Verifying User..."
+                halign: "center"
+                font_size: "30sp"
+                color: 0, 0, 0, 1
+                size_hint_y: None
+                height: "40dp"
 
         # --- NUMBER PAD GRID ---
-        MDGridLayout:
+        GridLayout:
+            id: numpad_grid
             cols: 3
-            spacing: "8dp"
-            padding: "120dp", "20dp"
-            size_hint_y: 0.55
+            spacing: "10dp"
+            padding: "40dp", "30dp"
+            size_hint_y: 0.7
             pos_hint: {"center_x": .5}
             row_force_default: True
             row_default_height: 100
@@ -53,6 +79,7 @@
             NumpadButton:
                 text: "1"
                 on_release: root.add_digit("1")
+
             NumpadButton:
                 text: "2"
                 on_release: root.add_digit("2")
@@ -85,43 +112,56 @@
             # Row 4
             NumpadButton:
                 text: "CLR"
-                font_size: "22sp"
-                on_release: root.clear_input()
+                font_size: "34sp"
+                on_press: root.clear_input()
 
             NumpadButton:
                 text: "0"
-                on_release: root.add_digit("0")
+                on_press: root.add_digit("0")
 
             NumpadButton:
                 text: "DEL"
-                font_size: "22sp"
-                on_release: root.delete_last()
+                font_size: "34sp"
+                on_press: root.delete_last()
 
         # --- CONTROL BUTTONS ---
-        MDBoxLayout:
+        BoxLayout:
+            id: controls_box
             orientation: 'horizontal'
-            spacing: "20dp"
-            padding: "120dp", "10dp", "120dp", "20dp"
+            spacing: "15dp"
+            padding: "60dp", "15dp", "60dp", "30dp"
             size_hint_y: 0.18
             pos_hint: {"center_x": .5}
 
-            NumpadButton:
+            AppButton:
                 text: "CANCEL"
-                font_size: "22sp"
-                md_bg_color: 0.9, 0.2, 0.2, 1  # Red
-                on_release: root.cancel_transaction()
+                font_size: "34sp"
+                base_color: 0.9, 0.2, 0.2, 1  # Red
+                down_color: 0.75, 0.15, 0.15, 1
+                color: 1,1,1,1
+                on_press: root.cancel_transaction()
 
-            NumpadButton:
+            AppButton:
+                id: enter_btn
                 text: "ENTER"
-                font_size: "22sp"
-                md_bg_color: 0.2, 0.8, 0.2, 1  # Green
-                on_release: root.submit_ucid()
+                font_size: "34sp"
+                disabled: True
+                # background_normal: ''
+                base_color: 0.2, 0.8, 0.2, 1  # Green
+                down_color: 0.15, 0.65, 0.15, 1
+                color: 1,1,1,1
+                on_press: root.submit_ucid()
+
+        # -- Spacer --
+        Widget:
+            size_hint_y: None
+            height: "84dp"
 
 # --- Custom Button Component ---
 # This prevents code duplication for the number keys
-<NumpadButton@MDFillRoundFlatButton>:
-    font_size: "28sp"
-    size_hint: 1, 1
-    md_bg_color: 0.82, 0.82, 0.82, 1  # Light Grey
-    text_color: 0, 0, 0, 1         # Black Text
-    radius: [15, 15, 15, 15]
+<NumpadButton@AppButton>:
+    font_size: "40sp"
+    size_hint: .5, 1
+    color: 0, 0, 0, 1         # Black Text
+    width: dp(60)
+    height: dp(120)

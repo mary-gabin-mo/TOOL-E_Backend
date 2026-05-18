@@ -1,4 +1,20 @@
+"""
+PURPOSE:
+Hardware abstraction/service for kiosk peripherals (load cell, LEDs, buzzer,
+card reader, and Pi-specific GPIO behavior).
+
+RUNTIME ROLE:
+- Dispatches app events: `on_load_cell_detect`, `on_card_scanned`.
+- Encapsulates Pi hardware polling and mock behavior for non-Pi development.
+
+API ENDPOINTS USED:
+- None directly.
+"""
+
 import platform
+import traceback
+import subprocess
+from kivy.app import App
 from kivy.event import EventDispatcher
 from smartcard.System import readers
 from smartcard.util import toHexString
@@ -9,7 +25,14 @@ from kivy.core.window import Window
 from config import (
     PIN_LOAD_CELL_DAT, PIN_LOAD_CELL_CLK,
     PIN_LED_GREEN, PIN_LED_RED, PIN_LED_YELLOW,
-    LOAD_CELL_THRESHOLD
+    PIN_BUZZER,
+    LOAD_CELL_THRESHOLD,
+    LOAD_CELL_RETRIGGER_COOLDOWN_SEC,
+    AUTO_TARE_ENABLED,
+    AUTO_TARE_SAMPLES,
+    AUTO_TARE_SAMPLE_DELAY_SEC,
+    CARD_READER_POWER_ON_CMD,
+    CARD_READER_POWER_OFF_CMD,
 )
 
 # Check system type
@@ -27,12 +50,22 @@ class HardwareManager(EventDispatcher):
     def __init__(self, **kwargs):
         super().__init__(*kwargs)
         self.is_pi = IS_PI
+        self._pcsc_poll_event = None
+        self._led_state = None
         
         # Load Cell State
         self.lgpio_handle = None
         self.stable_reads = 0
-        self.offset = 382000  # From your calibration script
-        self.STABLE_READS_REQUIRED = 3
+        self.offset = 499750 # weight of the bed in raw number
+        self._load_cell_trigger_armed = True
+        self._load_cell_below_threshold_reads = 0
+        # OPTIMIZATION: Adjusted stable reads for lower polling frequency
+        # At 5Hz (0.2s), 2 reads = ~0.4s debounce (was 3 reads @ 10Hz = ~0.3s)
+        self.STABLE_READS_REQUIRED = 2
+        self.POLL_INTERVAL_SEC = 0.2
+        self.RETRIGGER_COOLDOWN_POLLS = max(self.STABLE_READS_REQUIRED, int(round(LOAD_CELL_RETRIGGER_COOLDOWN_SEC / self.POLL_INTERVAL_SEC)))
+        self.RETRIGGER_DELAY_POLLS = self.RETRIGGER_COOLDOWN_POLLS - self.STABLE_READS_REQUIRED
+        self.poll_counter = 0  # For periodic debug output
         
         if self.is_pi:
             self._setup_real_hardware()
@@ -67,26 +100,75 @@ class HardwareManager(EventDispatcher):
             lgpio.gpio_claim_output(self.lgpio_handle, PIN_LED_RED, 0)
             lgpio.gpio_claim_output(self.lgpio_handle, PIN_LED_YELLOW, 0)
             
-            # Turn on Yellow (Idle) initially
-            self.set_leds('idle')
+            # 3b. Setup Buzzer (Claiming it for output)
+            lgpio.gpio_claim_output(self.lgpio_handle, PIN_BUZZER, 0)
+
+            self.set_led_state('idle')
+            print("[HARDWARE] LEDs configured. Idle LED state applied.")
 
             # 4. Start polling the load cell 
-            # Run 10 times a second (0.1s interval)
-            Clock.schedule_interval(self._poll_load_cell, 0.1)
+            # OPTIMIZATION: Reduce polling frequency from 10Hz (0.1s) to 5Hz (0.2s)
+            # This keeps responsiveness while cutting CPU usage in half
+            print("[HARDWARE] Starting load cell polling (0.2s interval - optimized)...")
+            Clock.schedule_interval(self._poll_load_cell, self.POLL_INTERVAL_SEC)
+            print("[HARDWARE] Load cell polling scheduled successfully!")
 
         except ImportError:
             print("[ERROR] lgpio not found. Hardware control disabled.")
+            self.lgpio_handle = None
         except Exception as e:
             print(f"[ERROR] GPIO Setup failed: {e}")
+            print(f"[ERROR] Full traceback:")
+            traceback.print_exc()
+            self.lgpio_handle = None
         
         # implement GPIO setup...
         # implement other methods for the real hardware
         barcode = "#barcode_test#" ### Replace with the card reader input
         self.dispatch('on_card_scanned', barcode)
         
-        # # Start checking for smart cards every .5 second
-        print("[HARDWARE] Starting PC/SC Reader Polling...")
-        Clock.schedule_interval(self._check_pcsc_reader, 0.5)
+        # Card reader polling is controlled by screen lifecycle.
+
+    def start_card_reader_polling(self):
+        """Start PC/SC card polling loop if not already running."""
+        self._set_card_reader_power(True)
+        if self._pcsc_poll_event is None:
+            print("[HARDWARE] Starting PC/SC Reader Polling...")
+            self._pcsc_poll_event = Clock.schedule_interval(self._check_pcsc_reader, 0.5)
+
+    def stop_card_reader_polling(self):
+        """Stop PC/SC card polling loop if running."""
+        if self._pcsc_poll_event is not None:
+            self._pcsc_poll_event.cancel()
+            self._pcsc_poll_event = None
+            print("[HARDWARE] Stopped PC/SC Reader Polling.")
+        self._set_card_reader_power(False)
+
+    def _set_card_reader_power(self, enabled):
+        """
+        Optional USB power control for the card reader device.
+        Set CARD_READER_POWER_ON_CMD / CARD_READER_POWER_OFF_CMD in config/.env.
+        """
+        cmd = CARD_READER_POWER_ON_CMD if enabled else CARD_READER_POWER_OFF_CMD
+        if not cmd:
+            return
+
+        try:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=3,
+            )
+            if result.returncode != 0:
+                stderr = (result.stderr or "").strip()
+                print(f"[HARDWARE] Card reader power command failed ({result.returncode}): {stderr}")
+            else:
+                state = "ON" if enabled else "OFF"
+                print(f"[HARDWARE] Card reader USB power set {state}.")
+        except Exception as e:
+            print(f"[HARDWARE] Card reader power command error: {e}")
         
     def _read_hx711_raw(self):
         """
@@ -126,30 +208,98 @@ class HardwareManager(EventDispatcher):
         """
         Periodically checks weight. Replaces 'wait_for_object' loop.
         """
+        self.poll_counter += 1
+        
         if not self.lgpio_handle:
+            if self.poll_counter % 50 == 0:  # Print every 5 seconds (50 polls * 0.1s)
+                print("[HARDWARE] Waiting for lgpio handle...")
             return
 
         raw_val = self._read_hx711_raw()
         if raw_val is None:
+            if self.poll_counter % 50 == 0:
+                print("[HARDWARE] Load cell sensor not responding")
             return # Sensor not ready
 
-        current_weight = raw_val - self.offset
+        current_weight = (raw_val - self.offset)
+        
+        # # Print status every 10 polls (1 second)
+        # if self.poll_counter % 10 == 0:
+        #     print(
+        #         f"[LOADCELL] Raw: {raw_val}, Weight: {current_weight}, "
+        #         f"Threshold: {LOAD_CELL_THRESHOLD}, Stable: {self.stable_reads}/{self.STABLE_READS_REQUIRED}, "
+        #         f"Armed: {self._load_cell_trigger_armed}, Below: {self._load_cell_below_threshold_reads}"
+        #     )
 
         # Check Threshold
         if current_weight > LOAD_CELL_THRESHOLD:
+            self._load_cell_below_threshold_reads = 0
+            if not self._load_cell_trigger_armed:
+                return
             self.stable_reads += 1
         else:
             self.stable_reads = 0
+            self._load_cell_below_threshold_reads += 1
+            if self._load_cell_below_threshold_reads >= self.STABLE_READS_REQUIRED:
+                self._load_cell_trigger_armed = True
 
         # Trigger Event
-        if self.stable_reads >= self.STABLE_READS_REQUIRED:
-            print(f"[HARDWARE] Object Detected! Weight: {current_weight}")
+        if self._load_cell_trigger_armed and self.stable_reads >= self.STABLE_READS_REQUIRED:
+            print(f"\n{'='*60}")
+            print(f"[HARDWARE] **OBJECT DETECTED!**")
+            print(f"[HARDWARE] Weight: {current_weight} (raw: {raw_val})")
+            print(f"[HARDWARE] Dispatching on_load_cell_detect event...")
+            print(f"{'='*60}\n")
             self.dispatch('on_load_cell_detect', current_weight)
             # Reset stable reads so we don't trigger 30 times a second while object sits there
             # Or you can add logic to wait for removal before triggering again.
-            self.stable_reads = -50 # Simple "debounce" delay
+            self.stable_reads = 0
+            self._load_cell_trigger_armed = False
+            self._load_cell_below_threshold_reads = 0
+
+    def reset_load_cell_detection_state(self, armed=True):
+        """Reset the load-cell trigger state without changing the calibration offset."""
+        self.stable_reads = 0
+        self._load_cell_below_threshold_reads = 0
+        self._load_cell_trigger_armed = armed
+
+    def tare_load_cell(self, samples=AUTO_TARE_SAMPLES, sample_delay=AUTO_TARE_SAMPLE_DELAY_SEC):
+        """Recalculate the current empty-bed offset from several raw samples."""
+        if not AUTO_TARE_ENABLED:
+            return False
+        if not self.lgpio_handle:
+            return False
+
+        try:
+            import time
+
+            readings = []
+            for _ in range(max(1, int(samples))):
+                raw_val = self._read_hx711_raw()
+                if raw_val is not None:
+                    readings.append(raw_val)
+                time.sleep(max(0.0, float(sample_delay)))
+
+            if not readings:
+                print("[HARDWARE] Tare skipped: no valid load-cell readings")
+                return False
+
+            self.offset = sum(readings) / len(readings)
+            self.reset_load_cell_detection_state(armed=True)
+            print(f"[HARDWARE] Load cell tared. New offset: {self.offset:.2f} from {len(readings)} samples")
+            return True
+        except Exception as e:
+            print(f"[HARDWARE] Tare failed: {e}")
+            return False
         
     def _check_pcsc_reader(self, dt):
+        # Hard safety guard: only read cards while welcome screen is active.
+        app = App.get_running_app()
+        if not app or not getattr(app, 'manager_screens', None):
+            return
+        if app.manager_screens.current != 'welcome screen':
+            return
+
         try:
             # Get list of available readers
             r_list = readers()
@@ -186,11 +336,81 @@ class HardwareManager(EventDispatcher):
             
     def cleanup(self):
         """Release GPIO resources on app exit."""
+        self.stop_card_reader_polling()
         if self.lgpio_handle is not None:
             import lgpio
+            self._set_all_leds_off()
             lgpio.gpiochip_close(self.lgpio_handle)
             self.lgpio_handle = None
             print("[HARDWARE] GPIO handle closed.")
+
+    def _set_all_leds_off(self):
+        """Turn all LEDs off (active-low wiring)."""
+        if not self.is_pi or self.lgpio_handle is None:
+            return
+
+        import lgpio
+        lgpio.gpio_write(self.lgpio_handle, PIN_LED_GREEN, 1)
+        lgpio.gpio_write(self.lgpio_handle, PIN_LED_YELLOW, 1)
+        lgpio.gpio_write(self.lgpio_handle, PIN_LED_RED, 1)
+        lgpio.gpio_write(self.lgpio_handle, PIN_BUZZER, 1)
+
+    def set_led_state(self, state):
+        """
+        Set kiosk status LED state.
+        Supported states:
+        - idle: green
+        - transaction: yellow
+        - alert: red
+        """
+        if not self.is_pi or self.lgpio_handle is None:
+            self._led_state = state
+            return
+
+        state = (state or '').strip().lower()
+        pin_map = {
+            'idle': PIN_LED_GREEN,
+            'transaction': PIN_LED_YELLOW,
+            'alert': PIN_LED_RED,
+        }
+
+        target_pin = pin_map.get(state)
+        if target_pin is None:
+            print(f"[HARDWARE] Unknown LED state requested: {state}")
+            return
+
+        import lgpio
+        self._set_all_leds_off()
+        # Active-low LED wiring: 0 = on, 1 = off
+        lgpio.gpio_write(self.lgpio_handle, target_pin, 0)
+        self._led_state = state
+
+        # Buzz buzzer when alert state is triggered
+        if state == 'alert':
+            self.buzz()
+
+    def buzz(self):
+        """Trigger a buzzer beep pattern (two short beeps)."""
+        if not self.is_pi or self.lgpio_handle is None:
+            return
+
+        import lgpio
+        import time
+        import threading
+
+        def _buzz_thread():
+            try:
+                # Active-low buzzer: 0 = on, 1 = off
+                for _ in range(2):
+                    lgpio.gpio_write(self.lgpio_handle, PIN_BUZZER, 0)
+                    time.sleep(0.2)
+                    lgpio.gpio_write(self.lgpio_handle, PIN_BUZZER, 1)
+                    time.sleep(0.1)
+            except Exception as e:
+                print(f"[HARDWARE] Buzzer error: {e}")
+
+        # Run in background thread so we don't block the main thread
+        threading.Thread(target=_buzz_thread, daemon=True).start()
     
     # --- MOCK HARDWARE (Mac/Windows) ---
     def _setup_mock_hardware(self):

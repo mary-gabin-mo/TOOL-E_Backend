@@ -1,7 +1,18 @@
-from kivymd.uix.screen import MDScreen
-from kivy.app import App
+"""
+PURPOSE:
+Displays user-facing error messages and provides a safe return path to welcome.
 
-class UserErrorScreen(MDScreen):
+RUNTIME ROLE:
+- Generic error surface for validation/network/flow failures.
+
+API ENDPOINTS USED:
+- None directly.
+"""
+
+from kivy.app import App
+from View.baseScreen import BaseScreen
+
+class UserErrorScreen(BaseScreen):
     
     def set_error_message(self, message):
         """
@@ -15,4 +26,4 @@ class UserErrorScreen(MDScreen):
         if hasattr(app, 'session'):
             app.session.reset()
             
-        self.manager.current = 'welcome screen'
+        self.go_back('welcome screen') 

@@ -1,124 +1,179 @@
 <ToolConfirmScreen>:
-    md_bg_color: 1, 1, 1, 1
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-    MDBoxLayout:
+    BoxLayout:
         orientation: 'vertical'
-        padding: "20dp"
-        spacing: "20dp"
+        padding: "30dp"
+        spacing: "14dp"
         pos_hint: {"center_x": .5, "center_y": .5}
 
         # -- Logo Area Placeholder --
         Widget:
-            size_hint_y: 0.15
+            size_hint_y: 0.13
 
-        # -- Header --
-        MDLabel:
-            text: "Confirm Tool"
-            halign: "center"
-            font_style: "H4"
-            bold: True
-            size_hint_y: 0.1
+        # -- Header Spacer --
+        Widget:
+            size_hint_y: None
+            height: "72dp"
 
         # -- Content Card --
-        MDCard:
+        BoxLayout:
             orientation: "vertical"
-            padding: "10dp"
-            spacing: "5dp"
-            size_hint: 0.85, 0.3
+            padding: "15dp", "6dp", "15dp", "10dp"
+            spacing: "12dp"
+            size_hint: 0.96, 0.76
             pos_hint: {"center_x": .5}
-            radius: [20, 20, 20, 20]
-            elevation: 2
-            
-            # 1. Captured Image
-            Image:
-                id: tool_image
-                source: "assets/images/logo_white.png"
-                allow_stretch: True
-                keep_ratio: True
-                size_hint_y: 0.6
-                radius: [20, 20, 0, 0]
+            canvas.before:
+                Color:
+                    rgba: 1, 1, 1, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [20, 20, 20, 20]
 
-            # 2. Prediction Info
-            MDBoxLayout:
-                orientation: "vertical"
-                size_hint_y: 0.4
-                spacing: "5dp"
-                
-                MDLabel:
-                    text: "Is this correct?"
-                    halign: "center"
-                    theme_text_color: "Secondary"
-                    font_style: "Caption"
-                
-                MDLabel:
-                    id: tool_name_label
-                    text: "Loading..."
-                    halign: "center"
-                    font_style: "H4"
-                    bold: True
-                    theme_text_color: "Primary"
-                
-                MDLabel:
-                    id: confidence_label
-                    text: "--%"
-                    halign: "center"
-                    theme_text_color: "Custom"
-                    text_color: 0.2, 0.7, 0.2, 1 # Green
-                    font_style: "Body1"
+            # 1. Captured Image + Overlayed Prediction Info
+            RelativeLayout:
+                size_hint_y: 1
+
+                Image:
+                    id: tool_image
+                    source: ""
+                    allow_stretch: True
+                    keep_ratio: True
+                    size_hint: 1, 1
+                    pos_hint: {"x": 0, "y": 0.1}
+                    canvas.before:
+                        PushMatrix
+                        Rotate:
+                            angle: 180
+                            origin: self.center
+                    canvas.after:
+                        PopMatrix
+
+                BoxLayout:
+                    orientation: "vertical"
+                    size_hint: 1, None
+                    height: "126dp"
+                    pos_hint: {"x": 0, "y": 0}
+                    padding: "12dp", "10dp"
+                    spacing: "8dp"
+
+                    Label:
+                        text: "Is this correct?"
+                        halign: "center"
+                        valign: "middle"
+                        text_size: self.size
+                        font_size: "24sp"
+                        color: 0.5, 0.5, 0.5, 1
+                        size_hint_y: None
+                        height: "28dp"
+
+                    Label:
+                        id: tool_name_label
+                        text: "Loading..."
+                        halign: "center"
+                        valign: "middle"
+                        text_size: self.size
+                        font_size: "48sp"
+                        bold: True
+                        color: 0, 0, 0, 1
+                        size_hint_y: None
+                        height: "54dp"
+
+                    Label:
+                        id: confidence_label
+                        text: "--%"
+                        halign: "center"
+                        valign: "middle"
+                        text_size: self.size
+                        font_size: "28sp"
+                        color: 0.2, 0.7, 0.2, 1
+                        size_hint_y: None
+                        height: "24dp"
 
         Widget:
-            size_hint_y: 0.04
+            size_hint_y: None
+            height: "10dp"
 
         # -- Action Buttons --
-        MDBoxLayout:
+        BoxLayout:
             orientation: 'horizontal'
             spacing: "15dp"
-            size_hint: 0.95, 0.16  # Increased height for stacked buttons
+            size_hint_x: 0.95
+            size_hint_y: None
+            height: "168dp"
             pos_hint: {"center_x": .5}
-            padding: "5dp"
+            padding: "8dp"
 
             # NO Button (Left Side)
-            MDFillRoundFlatButton:
+            AppButton:
                 text: "NO"
-                font_size: "20sp"
-                size_hint_x: 0.3
+                font_size: "30sp"
+                # Expand to half width when in return mode, otherwise keep original 30/70 split
+                size_hint_x: 0.3 if root.mode != 'return' else 0.5
                 size_hint_y: 1
-                md_bg_color: 0.8, 0.2, 0.2, 1 # Red
+                background_normal: ''
+                base_color: 0.8, 0.2, 0.2, 1  # Red
+                down_color: 0.65, 0.15, 0.15, 1
+                color: 1, 1, 1, 1
                 on_release: root.reject_tool()
 
             # YES Actions (Right Side - Stacked)
-            MDBoxLayout:
+            BoxLayout:
                 orientation: 'vertical'
-                spacing: "10dp"
-                size_hint_x: 0.7
-                
-                # Option 1: Scan More
-                MDFillRoundFlatButton:
+                spacing: "15dp" if root.mode != 'return' else "0dp"
+                # Shrink to half width when in return mode, otherwise original 70%
+                size_hint_x: 0.7 if root.mode != 'return' else 0.5
+
+                # Option 1: Scan More (hidden in return mode)
+                AppButton:
                     text: "YES, SCAN MORE"
-                    font_size: "18sp"
+                    font_size: "26sp"
                     size_hint: 1, 0.5
-                    md_bg_color: 0.2, 0.6, 0.8, 1 # Blue
+                    # collapse when in return mode
+                    size_hint_y: 0.5 if root.mode != 'return' else 0
+                    disabled: root.mode == 'return'
+                    opacity: 1 if root.mode != 'return' else 0
+                    background_normal: ''
+                    base_color: 0.2, 0.6, 0.8, 1  # Blue
+                    down_color: 0.15, 0.65, 0.15, 1
+                    color: 1, 1, 1, 1
                     on_release: root.confirm_scan_more()
 
-                # Option 2: Finish
-                MDFillRoundFlatButton:
-                    text: "YES, FINISH"
-                    font_size: "18sp"
+                # Option 2: Finish (expand to full height in return mode)
+                AppButton:
+                    text: "YES" if root.mode == 'return' else "YES, FINISH"
+                    font_size: "26sp"
                     size_hint: 1, 0.5
-                    md_bg_color: 0.2, 0.7, 0.2, 1 # Green
+                    size_hint_y: 0.5 if root.mode != 'return' else 1
+                    background_normal: ''
+                    base_color: 0.2, 0.7, 0.2, 1  # Green
+                    down_color: 0.15, 0.65, 0.15, 1
+                    color: 1, 1, 1, 1
                     on_release: root.confirm_finish()
 
         Widget:
-            size_hint_y: 0.02
+            size_hint_y: None
+            height: "8dp"
 
-        # -- Cancel Button --
-        MDFillRoundFlatButton:
-            text: "CANCEL"
-            font_size: "20sp"
-            size_hint: 0.95, 0.08
+        # -- Back Button --
+        AppButton:
+            text: "BACK"
+            font_size: "32sp"
+            size_hint_x: 0.95
+            size_hint_y: None
+            height: "72dp"
             pos_hint: {"center_x": .5}
-            md_bg_color: 0.9, 0.17, 0.25, 1  # Red
-            on_release: root.cancel_transaction()
+            background_normal: ''
+            base_color: 0.4, 0.4, 0.4, 1
+            color: 1, 1, 1, 1
+            on_release: root.go_back_to_capture()
 
         Widget:
-            size_hint_y: 0.04
+            size_hint_y: None
+            height: "84dp"

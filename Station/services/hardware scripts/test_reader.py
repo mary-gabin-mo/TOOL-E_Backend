@@ -1,3 +1,14 @@
+"""
+PURPOSE:
+Standalone smartcard reader polling test for validating PC/SC setup on device.
+
+RUNTIME ROLE:
+- Developer utility script; not used by kiosk runtime app.
+
+API ENDPOINTS USED:
+- None.
+"""
+
 from smartcard.System import readers
 from smartcard.util import toHexString
 import time

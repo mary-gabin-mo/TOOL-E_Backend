@@ -1,99 +1,120 @@
 <CaptureScreen>:
-    md_bg_color: 1, 1, 1, 1  # White background
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1  # White background
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-    MDBoxLayout:
+    BoxLayout:
         orientation: 'vertical'
-        padding: "20dp"
-        spacing: "20dp"
+        padding: "50dp"
+        spacing: "15dp"
 
         # -- Logo Area Placeholder --
         Widget:
-            size_hint_y: 0.3
+            size_hint_y: 0.15
 
-        MDLabel:
-            text: "Place tool on Bed"
-            halign: "center"
-            font_style: "H4"
-            size_hint_y: 0.1
+        BoxLayout:
+            orientation: 'vertical'
+            padding: "20dp"
+            spacing: "20dp"
+            size_hint_y: 0.25
+
+            Widget:
+                size_hint_y: 0.2
+
+            Label:
+                text: "Place tool on Bed"
+                halign: "center"
+                valign: "middle"
+                text_size: self.size
+                font_size: "44sp"
+                bold: True
+                color: 0, 0, 0, 1
+                size_hint_y: None
+                height: "72dp"
 
         # --- CAMERA CONTAINER ---
-        MDRelativeLayout:
-            size_hint_y: 0.7
+        RelativeLayout:
+            size_hint_y: 0.5
 
             # 1. The Camera Feed
             Image:
                 id: camera_preview
-                source: "assets/images/logo_white.png"
+                source: ""
                 allow_stretch: True
                 keep_ratio: True
-                opacity: 0 
+                opacity: 0
 
             # 2. Processing Overlay (Spinner + Text)
-            MDBoxLayout:
+            BoxLayout:
                 id: processing_overlay
                 orientation: 'vertical'
-                adaptive_size: True
+                size_hint: None, None
+                size: '180dp', '80dp'
                 pos_hint: {'center_x': 0.5, 'center_y': 0.5}
                 spacing: "15dp"
 
                 # Hidden by default (opacity 0)
                 opacity: 0
 
-                MDSpinner:
-                    id: loading_spinner
-                    size_hint: None, None
-                    size: "60dp", "60dp"
-                    pos_hint: {'center_x': .5}
-                    active: False
-                    palette: [ [0.2, 0.6, 0.8, 1] ]
-
-                MDLabel:
+                Label:
                     id: loading_label
                     text: "Initializing..."
                     halign: "center"
-                    theme_text_color: "Custom"
-                    text_color: 0.2, 0.6, 0.8, 1 # Match Spinner Blue
-                    font_style: "H5"
+                    font_size: "24sp"
                     bold: True
+                    color: 0.2, 0.6, 0.8, 1
 
-        MDBoxLayout:
-            orientation: 'horizontal'
-            spacing: "20dp"             # Gap between buttons
-            size_hint_y: None           # Don't expand vertically
-            height: '80dp'              # Fixed height for this row
-            pos_hint: {"centre_x": .5}
-            padding: '10dp'             # Optional padding around the row
-
-            MDFillRoundFlatButton:
-                text: "DEV - BACK\n(Action Selection\nScreen)"
-                font_size: "14sp"
-                size_hint: .2, 1        
-                md_bg_color: 0.4, 0.4, 0.4, 1  # Grey
-                on_release: root.go_back('action selection screen')
+        # -- Spacer --
+        Widget:
+            size_hint_y: None
+            height: "30dp"
             
-            MDFillRoundFlatButton:
-                text: "DEV - Capture"
-                font_size: "14sp"
-                size_hint: .2, 1        
-                md_bg_color: 0.4, 0.4, 0.4, 1  # Grey
-                on_release: root.capture_btn('done')
-
-            # -- DEV BUTTON --
-            MDFillRoundFlatButton:
-                text: "DEV - NEXT\n(Tool Confirm\nScreen)"
-                font_size: "14sp"
-                size_hint: .2, 1        
-                md_bg_color: 0.4, 0.4, 0.4, 1  # Grey
-                on_release: root.go_to('tool confirm screen')
-
-        # -- Cancel Button --
-        MDFillRoundFlatButton:
-            text: "CANCEL"
-            font_size: "24sp"
-            size_hint: 1, 0.01
+        # -- Capture Button --
+        AppButton:
+            id: manual_capture_btn
+            text: "MANUAL CAPTURE"
+            font_size: "36sp"
+            size_hint: 0.975, 0.12
             pos_hint: {"center_x": .5}
-            md_bg_color: 0.9, 0.17, 0.25, 1  # Red
-            on_release: root.cancel_transaction()
+            base_color: 0.2, 0.5, 0.85, 1
+            down_color: 0.15, 0.4, 0.72, 1
+            color: 1, 1, 1, 1
+            on_release: root.capture_btn()
 
-        # Widget:
-        #     size_hint_y: 0.01
+        # -- Spacer --
+        Widget:
+            size_hint_y: None
+            height: "30dp"
+        
+        # -- Bottom Buttons -- 
+        BoxLayout:
+            orientation: 'horizontal'
+            spacing: "12dp"
+            size_hint_y: None
+            height: '78dp'
+            padding: '8dp', '0dp', '8dp', '0dp'
+
+            AppButton:
+                text: "CANCEL"
+                font_size: "32sp"
+                size_hint: .28, 0.8
+                base_color: 0.9, 0.17, 0.25, 1  # Red
+                down_color: 0.75, 0.12, 0.2, 1
+                color: 1, 1, 1, 1
+                on_release: root.cancel_transaction()
+
+            AppButton:
+                text: "BACK"
+                font_size: "32sp"
+                size_hint: .28, 0.8
+                base_color: 0.4, 0.4, 0.4, 1
+                color: 1, 1, 1, 1
+                on_release: root.go_back('action selection screen')
+
+        # -- Spacer for the footer--
+        Widget:
+            size_hint_y: None
+            height: "84dp"

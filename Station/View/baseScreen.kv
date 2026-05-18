@@ -12,20 +12,61 @@
         # 3. The Logo
         Image:
             source: "assets/images/logo_black.png"
-            size_hint_y: 0.12
-            pos_hint: {"top": 0.95, "center_x": .5}
+            size_hint_y: 0.07
+            pos_hint: {"top": 0.95, "center_x": .6}
             allow_stretch: True
             keep_ratio: True
 
-        # -- Title --
-        MDLabel:
-            text: "TOOL-E Kiosk"
+        # -- TOOL-E Logo (to the right of Makerspace logo) --
+        Image:
+            source: "assets/images/TOOL-E Logo.png"
             size_hint_y: 0.1
-            pos_hint: {"top": 0.85, "center_x": .5}
-            halign: "center"
-            font_style: "H3"
-            theme_text_color: "Primary"
-            bold: True
+            pos_hint: {"top": 0.97, "center_x": .25}
+            allow_stretch: True
+            keep_ratio: True
+
+        # -- User Info Below Logo --
+        UserInfoFooter:
+            size_hint_y: None
+            height: "105dp"
+            pos_hint: {"bottom": 0.05, "center_x": .5, "x": 0}
+            size_hint_x: 1
+
+# --- Global button style ---
+<AppButton@Button>:
+    base_color: 0.90, 0.90, 0.90, 1
+    down_color: 0.74, 0.74, 0.74, 1
+    background_normal: ''
+    background_down: ''
+    background_color: 0, 0, 0, 0
+    font_size: '30sp'
+    color: 0.35, 0.35, 0.35, 1
+    # font_size: '28sp'
+    # size_hint: None, None
+    # height: dp(90)
+    # width: dp(280)
+    canvas.before:
+        Color:
+            rgba: 0, 0, 0, 0.16
+        RoundedRectangle:
+            pos: self.x, self.y - 3
+            size: self.size
+            radius: [22, 22, 22, 22]
+
+        Color:
+            rgba: self.down_color if self.state == 'down' else self.base_color
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [22, 22, 22, 22]
+    canvas.after:
+        Color:
+            rgba: (0.55, 0.55, 0.55, 1) if self.state == 'down' else (0.68, 0.68, 0.68, 1)
+        Line:
+            width: 1.4
+            rounded_rectangle: (self.x, self.y, self.width, self.height, 22, 22, 22, 22, 120)
+
+<Button>:
+    font_size: '30sp'
 
 
-        

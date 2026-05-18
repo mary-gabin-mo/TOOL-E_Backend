@@ -1,0 +1,31 @@
+#:kivy 2.0
+#
+# TEMPLATE: How to add UserInfoFooter to any screen
+#
+# 1. Import the component in your KV file (at the top)
+# 2. Use MDBoxLayout with orientation: 'vertical' for the main container
+# 3. Put your content inside first, with size_hint_y values that add up to less than 1
+# 4. Add UserInfoFooter at the bottom with size_hint_y: None and height: "60dp"
+#
+# Example structure:
+#
+# <YourScreen>:
+#     md_bg_color: 1, 1, 1, 1
+#
+#     MDBoxLayout:
+#         orientation: 'vertical'
+#         
+#         # Your content here (size_hint_y should be < 1)
+#         MDLabel:
+#             text: "Main Content"
+#             size_hint_y: 0.9
+#         
+#         # Footer at the bottom
+#         UserInfoFooter:
+#             size_hint_y: None
+#             height: "60dp"
+#
+# The footer will automatically update when:
+# - User logs in (session.user_data is set)
+# - Transaction type changes (session.transaction_type changes)
+# - User logs out (footer shows "Guest" placeholders)

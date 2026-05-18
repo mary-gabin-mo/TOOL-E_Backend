@@ -1,33 +1,47 @@
-from fastapi import APIRouter
-from sqlalchemy import text
+"""
+PURPOSE:
+Provides dashboard analytics aggregates and period-based usage stats.
+
+API ENDPOINTS OWNED:
+- GET /analytics/dashboard
+
+API ENDPOINTS USED:
+- None (this module defines endpoints).
+"""
+
 from datetime import datetime, timedelta
+
+from fastapi import APIRouter, HTTPException
+from sqlalchemy import text
+
 from app.database import engine_tools
+from app.services import terms_service
 
 router = APIRouter()
+
+
+def _resolve_period_dates(period: str) -> tuple[datetime, datetime]:
+    now = datetime.now()
+    if period == "1_month":
+        return now - timedelta(days=30), now
+
+    term = terms_service.get_term_by_id(period)
+    if not term:
+        raise HTTPException(status_code=400, detail=f"Unknown period '{period}'")
+
+    try:
+        start_date = datetime.strptime(term["start"], "%Y-%m-%d")
+        end_date = datetime.strptime(term["end"], "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail="Invalid term date format in terms.json") from exc
+
+    return start_date, end_date
+
 
 @router.get("/analytics/dashboard")
 async def get_dashboard_analytics(period: str = "1_month"):
     with engine_tools.connect() as conn:
-        now = datetime.now()
-        start_date = None
-        end_date = now 
-        
-        if period == "1_month":
-            start_date = now - timedelta(days=30)
-        elif period == "winter_2026":
-            start_date = datetime(2026, 1, 1)
-            end_date = datetime(2026, 4, 30, 23, 59, 59)
-        elif period == "fall_2025":
-            start_date = datetime(2025, 9, 1)
-            end_date = datetime(2025, 12, 31, 23, 59, 59)
-        elif period == "summer_2025":
-            start_date = datetime(2025, 5, 1)
-            end_date = datetime(2025, 8, 31, 23, 59, 59)
-        elif period == "winter_2025":
-            start_date = datetime(2025, 1, 1)
-            end_date = datetime(2025, 4, 30, 23, 59, 59)
-        else:
-            start_date = now - timedelta(days=30)
+        start_date, end_date = _resolve_period_dates(period)
 
         params = {"start_date": start_date, "end_date": end_date}
         

@@ -1,4 +1,13 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+/**
+ * PURPOSE:
+ * Transaction log page for staff to search, filter, sort, paginate, and
+ * delete transaction records.
+ *
+ * API ENDPOINTS USED:
+ * - GET /transactions
+ * - DELETE /transactions/{transaction_id}
+ */
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
@@ -7,7 +16,9 @@ import { api } from '../../lib/axios';
 interface Transaction {
   transaction_id: number;
   user_id: number | null;
+  user_name?: string;
   tool_id: number | null;
+  tool_name?: string;
   checkout_timestamp: string;
   desired_return_date: string | null;
   return_timestamp: string | null;
@@ -61,7 +72,7 @@ export const TransactionsPage = () => {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const uniqueStatuses = ['Borrowed', 'Returned', 'Overdue'];
+  const uniqueStatuses = ['Borrowed', 'Returned', 'Consumed', 'Overdue'];
 
   const { data, isLoading, isError, error } = useQuery<TransactionsResponse>({
     queryKey: ['transactions', page, searchTerm, sortConfig, selectedStatuses],
@@ -161,6 +172,9 @@ export const TransactionsPage = () => {
           <thead>
             <tr className="border-b border-gray-100">
               <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Transaction ID
+              </th>
+              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 UCID
               </th>
               <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -192,6 +206,12 @@ export const TransactionsPage = () => {
                   )}
                 </div>
               </th>
+              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Date Returned
+              </th>
+              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[260px]">
+                Purpose
+              </th>
               <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider relative">
                 <div ref={dropdownRef} className="relative inline-block">
                   <div 
@@ -220,6 +240,9 @@ export const TransactionsPage = () => {
                   )}
                 </div>
               </th>
+              <th className="py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-[120px]">
+                Classified
+              </th>
               <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 {/* Actions column */}
               </th>
@@ -228,36 +251,39 @@ export const TransactionsPage = () => {
           <tbody className="">
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-sm text-gray-500">
+                <td colSpan={10} className="py-10 text-center text-sm text-gray-500">
                   Loading transactions...
                 </td>
               </tr>
             ) : isError ? (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-sm text-red-500">
+                <td colSpan={10} className="py-10 text-center text-sm text-red-500">
                   Failed to load transactions.
                   {error instanceof Error ? ` ${error.message}` : ''}
                 </td>
               </tr>
             ) : transactions.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-10 text-center text-sm text-gray-500">
+                <td colSpan={10} className="py-10 text-center text-sm text-gray-500">
                   No transactions found.
                 </td>
               </tr>
             ) : (
               transactions.map((tx) => (
               <tr key={tx.transaction_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 text-sm text-gray-900">
+                  #{tx.transaction_id}
+                </td>
                 <td className="py-4 px-6 text-sm font-medium text-gray-900">
                    <div className="flex flex-col">
                       <span>{tx.user_name || 'Unknown'}</span>
-                      <span className="text-xs text-gray-400">ID: {tx.user_id}</span>
+                      <span className="text-[10px] text-gray-400">ID: {tx.user_id}</span>
                    </div>
                 </td>
                 <td className="py-4 px-6 text-sm text-gray-500">
                    <div className="flex flex-col">
                       <span>{tx.tool_name || 'Unknown'}</span>
-                      <span className="text-xs text-gray-400">ID: {tx.tool_id}</span>
+                      <span className="text-[10px] text-gray-400">ID: {tx.tool_id}</span>
                    </div>
                 </td>
                 <td className="py-4 px-6 text-sm text-gray-500">
@@ -269,11 +295,36 @@ export const TransactionsPage = () => {
                 <td className="py-4 px-6 text-sm text-gray-500">
                    {tx.desired_return_date ? new Date(tx.desired_return_date).toLocaleDateString() : 'N/A'}
                 </td>
-                <td className="py-4 px-6 text-sm text-gray-500 max-w-[200px] truncate" title={tx.purpose || ''}>
+                <td className="py-4 px-6 text-sm text-gray-500">
+                  {tx.return_timestamp ? (
+                    <>
+                      {new Date(tx.return_timestamp).toLocaleDateString()}
+                      <span className="text-xs text-gray-400 block">
+                        {new Date(tx.return_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
+                 <td className="py-4 px-6 text-sm text-gray-500 max-w-[340px] whitespace-normal break-words" title={tx.purpose || ''}>
                    {tx.purpose || '-'}
                 </td>
                 <td className="py-4 px-6 text-sm">
                   <StatusBadge status={deriveStatus(tx)} />
+                </td>
+                <td className="py-4 px-4 text-sm">
+                  {tx.classification_correct === true ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                      Yes
+                    </span>
+                  ) : tx.classification_correct === false ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                      No
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">-</span>
+                  )}
                 </td>
                 <td className="py-4 px-6 text-sm text-right">
                   <button

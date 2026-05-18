@@ -1,91 +1,116 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# AdminWeb
 
-Currently, two official plugins are available:
+AdminWeb is the administrative web interface for TOOL-E, providing staff with authenticated access to inventory management, transaction monitoring, manual fallback workflows, analytics, reporting, and ML tool-identification debugging.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **Inventory Management**: Add, search, and manage tool catalog.
+- **Transaction Monitoring**: View, filter, and manage borrow/return records.
+- **Manual Transactions**: Fallback checkout/return for edge cases.
+- **Analytics Dashboard**: Live stats, period analytics, and top tools chart.
+- **Reports**: Date-range transaction export (CSV).
+- **ML Debug**: Upload images to test tool-identification model.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- React 19 + TypeScript
+- Vite
+- React Router
+- TanStack React Query
+- Zustand (persisted auth store)
+- Axios
+- Tailwind CSS
+- Recharts
+- Lucide React
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Node.js 20+
+- npm 10+
+- Running backend API (see ../Server)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Setup
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1. Clone the repo and navigate to `AdminWeb`.
+2. Create a `.env` file with:
+   ```
+   VITE_API_BASE_URL=<API_ADDRESS>
+   VITE_AUTH_TOKEN_TTL_SECONDS=<DESIRED_TOKEN_EXPIRY_TIME_IN_SECONDS> (default: 8 hours)
+   ```
+3. Install dependencies:
+   ```
+   npm install
+   ```
+4. Start the development server:
+   ```
+   npm run dev
+   ```
+5. Open the URL printed by Vite (default: http://localhost:5173).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])xxxxx
-```
+- `npm run dev` — Start development server
+- `npm run build` — Build for production (includes type-check)
+- `npm run preview` — Preview production build locally
+- `npm run lint` — Lint codebase
 
-## Project Dependencies
+## Project Structure
 
-### Core Libraries
-- **React** (`^19.2.0`): UI library
-- **React Router DOM** (`^7.11.0`): For application routing
-- **Vite** (`^7.2.4`): Build tool and development server
+- `src/App.tsx` — App routes and navigation
+- `src/components/layout/DashboardLayout.tsx` — Auth-protected layout, sidebar, sync, user info
+- `src/lib/axios.ts` — Axios client with API base URL and auth token
+- `src/lib/react-query.ts` — React Query client config
+- `src/lib/authStore.ts` — Zustand auth store (persisted)
+- `src/features/` — Feature pages:
+  - `auth/` — Login
+  - `dashboard/` — Analytics dashboard
+  - `inventory/` — Tool catalog
+  - `transactions/` — Borrow/return records
+  - `manual-transaction/` — Manual checkout/return
+  - `reports/` — Reports and export
+  - `debug/` — ML tool-identification
 
-### Data Fetching & State Management
-- **@tanstack/react-query** (`^5.90.15`): Server state management
-- **Zustand** (`^5.0.9`): Client state management
-- **Axios** (`^1.13.2`): HTTP client
+## Routing
 
-### UI & Styling
-- **Tailwind CSS** (`^4.1.18`): Utility-first CSS framework
-- **Lucide React** (`^0.562.0`): Icon set
-- **Recharts** (`^3.7.0`): Charting library
-- **clsx** (`^2.1.1`) & **tailwind-merge** (`^3.4.0`): Class name utilities
+- `/login` — Login page (redirects if authenticated)
+- `/dashboard` — Main dashboard (protected)
+- `/inventory` — Inventory management (protected)
+- `/transactions` — Transactions log (protected)
+- `/manual-transaction` — Manual checkout/return (protected)
+- `/reports` — Reports and export (protected)
+- `/debug-ml` — ML debug (protected)
+
+Unauthenticated users are always redirected to `/login`.
+
+## Authentication & Data
+
+- Auth state is persisted in browser storage (Zustand)
+- All API requests use the token (via axios interceptor)
+- "Sync Data" in sidebar refetches all active queries
+
+## Development Notes
+
+- Tailwind config: see `tailwind.config.js`
+- Vite config: see `vite.config.ts` (network access enabled)
+- TypeScript strict mode enabled
+- Linting: ESLint with React/TypeScript plugins
+
+## Limitations / TODO
+
+- **Role-based permissions are not yet implemented:**
+   - All authenticated users have the same level of access in AdminWeb. There is currently no distinction between admin, staff, or other roles.
+
+- **Manual transactions on the website cannot fully replicate kiosk transactions:**
+   - The kiosk captures and uploads images of tools for both ML identification and record-keeping. These images are stored on the server drive.
+   - Manual transactions performed via the AdminWeb interface do **not** capture or upload tool images.
+   - As a result, tool images will only be accessible from the website if:
+      - The server is deployed and has access to persistent storage, **or**
+      - The school or admin decides to upload images to the database (e.g., images taken during ML processing at the kiosk).
+   - If neither of these conditions is met, tool images will not be accessible from the website for those transactions.
+
+# License
+
+See [../LICENSE](../LICENSE)

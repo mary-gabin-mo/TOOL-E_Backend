@@ -1,3 +1,11 @@
+/**
+ * PURPOSE:
+ * Manual ML debugging page for admins to upload a tool image and inspect
+ * raw prediction output from the backend classifier.
+ *
+ * API ENDPOINTS USED:
+ * - POST /identify_tool (multipart/form-data, field: file)
+ */
 import React, { useState } from 'react';
 import axios from 'axios';
 
@@ -35,7 +43,6 @@ export const MLDebugPage: React.FC = () => {
             });
             setPrediction(response.data);
         } catch (err: any) {
-            console.error(err);
             setError(err.response?.data?.detail || err.message || 'An error occurred during prediction.');
         } finally {
             setLoading(false);

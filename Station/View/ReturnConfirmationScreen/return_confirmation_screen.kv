@@ -1,0 +1,92 @@
+<ReturnConfirmationScreen>:
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1  # White background
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: "50dp"
+        spacing: "40dp"
+        pos_hint: {"center_x": .5, "center_y": .5}
+
+        # --- Logo Area Placeholder ---
+        Widget:
+            size_hint_y: 0.3
+
+        # --- Success Checkmark ---
+        Label:
+            text: "✓"
+            halign: "center"
+            theme_text_color: "Custom"
+            text_color: 0.2, 0.8, 0.2, 1  # Green
+            font_size: "120sp"
+            size_hint_y: None
+            height: "140dp"
+
+        # --- Title ---
+        Label:
+            text: "Return Confirmed"
+            halign: "center"
+            font_size: "36sp"
+            bold: True
+            color: 0, 0, 0, 1
+            size_hint_y: None
+            height: "80dp"
+
+        # --- Message Display ---
+        Label:
+            id: message_display
+            text: "Successfully returned tool"
+            halign: "center"
+            font_size: "40sp"
+            color: 0.5, 0.5, 0.5, 1
+            size_hint_y: None
+            height: "100dp"
+
+        # --- Spacer ---
+        Widget:
+            size_hint_y: 0.3
+
+        # --- Return More Tools (Scan Again) ---
+        AppButton:
+            text: "RETURN MORE TOOLS"
+            font_size: "32sp"
+            size_hint: 0.8, None
+            height: "80dp"
+            pos_hint: {"center_x": .5}
+            base_color: 0.2, 0.7, 0.35, 1  # Green
+            down_color: 0.15, 0.55, 0.25, 1  # Darker Green
+            color: 1, 1, 1, 1
+            on_release: root.return_more_tools()
+
+        # --- Continue Button (Keep User Logged In) ---
+        AppButton:
+            text: "RETURN TO SELECTION"
+            font_size: "32sp"
+            size_hint: 0.8, None
+            height: "80dp"
+            pos_hint: {"center_x": .5}
+            base_color: 0.2, 0.6, 0.8, 1  # Blue
+            down_color: 0.15, 0.45, 0.65, 1  # Darker Blue
+            color: 1, 1, 1, 1
+            on_release: root.continue_with_user()
+
+        # --- Return Button ---
+        AppButton:
+            text: "RETURN TO START"
+            font_size: "32sp"
+            size_hint: 0.8, None
+            height: "80dp"
+            pos_hint: {"center_x": .5}
+            base_color: 0.9, 0.17, 0.25, 1  # Red
+            down_color: 0.75, 0.12, 0.2, 1  # Darker Red
+            color: 1, 1, 1, 1
+            on_release: root.return_to_menu()
+
+        # --- Spacer ---
+        Widget:
+            size_hint_y: None
+            height: "44dp"

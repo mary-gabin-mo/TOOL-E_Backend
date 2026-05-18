@@ -4,6 +4,8 @@
 
 *.pth
 
+*.jpg
+
 # Python
 __pycache__/
 *.py[cod]
@@ -67,3 +69,5 @@ dist-ssr/
 Thumbs.db
 Desktop.ini
 
+captured_images/
+temp/

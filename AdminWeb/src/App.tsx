@@ -1,3 +1,10 @@
+/**
+ * PURPOSE:
+ * Root router for AdminWeb. Defines protected page routes and includes
+ *
+ * API ENDPOINTS USED:
+ * - None directly in this file (routing only).
+ */
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './features/auth/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';

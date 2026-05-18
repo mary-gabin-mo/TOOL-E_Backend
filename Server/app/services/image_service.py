@@ -1,18 +1,40 @@
+"""
+PURPOSE:
+Handles image filesystem operations for temporary uploads, permanent storage,
+and scheduled cleanup of stale temp files.
+
+API ENDPOINTS USED:
+- None directly. Called by:
+    - POST /identify_tool
+    - POST /transactions
+    - PUT /transactions/{transaction_id}
+    - POST /transactions/kiosk
+"""
+
 import os
-import uuid
 import time
 import shutil
+from dotenv import load_dotenv
+
+load_dotenv('.env.local')
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CAPTURED_IMAGES_DIR = os.path.join(BASE_DIR, 'captured_images')
+# Allow overriding the image storage directory via environment variables (e.g., to a separate disk)
+CAPTURED_IMAGES_DIR = os.getenv('IMAGE_STORAGE_PATH', os.path.join(BASE_DIR, 'captured_images'))
 TEMP_IMAGES_DIR = os.path.join(CAPTURED_IMAGES_DIR, 'temp')
 
 def init_image_dirs():
     os.makedirs(TEMP_IMAGES_DIR, exist_ok=True)
 
-def save_temp_image(contents: bytes) -> str:
-    filename = f"{uuid.uuid4()}.jpg"
+def save_temp_image(contents: bytes, filename: str = None) -> str:
+    # Kiosk controls temp naming (e.g. txid_BORROW.jpg); backend saves as-is.
+    if not filename:
+        raise ValueError("Missing filename for temp image upload")
+    
+    # Ensure secure filename just in case
+    filename = os.path.basename(filename)
+    
     temp_path = os.path.join(TEMP_IMAGES_DIR, filename)
     with open(temp_path, "wb") as f:
         f.write(contents)
@@ -21,10 +43,17 @@ def save_temp_image(contents: bytes) -> str:
 def get_temp_image_path(filename: str) -> str:
     return os.path.join(TEMP_IMAGES_DIR, filename)
 
-def move_image_to_permanent(filename: str, tool_name: str, classification_correct: bool) -> str:
+def move_image_to_permanent(
+    filename: str,
+    tool_name: str,
+    classification_correct: bool,
+    new_transaction_id: str = None,
+    new_filename: str = None,
+) -> str:
     """
     Moves image from temp to permanent storage.
-    Returns the relative path from BASE_DIR.
+    If new_transaction_id is provided, the file will be renamed to match it.
+    Returns the final filename.
     """
     temp_path = get_temp_image_path(filename)
     if not os.path.exists(temp_path):
@@ -38,12 +67,21 @@ def move_image_to_permanent(filename: str, tool_name: str, classification_correc
     tool_target_dir = os.path.join(base_target_dir, safe_tool_name)
     os.makedirs(tool_target_dir, exist_ok=True)
     
-    new_filename = f"{safe_tool_name}_{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}.jpg"
-    target_path = os.path.join(tool_target_dir, new_filename)
+    # Prefer explicit final filename from payload. Fallback to transaction_id rename.
+    if new_filename:
+        final_filename = os.path.basename(new_filename)
+    elif new_transaction_id:
+        ext = os.path.splitext(filename)[1] or '.jpg'
+        final_filename = f"{new_transaction_id}{ext}"
+    else:
+        final_filename = filename
+        
+    target_path = os.path.join(tool_target_dir, final_filename)
     
     shutil.move(temp_path, target_path)
     
-    return os.path.relpath(target_path, BASE_DIR)
+    # Return just the image name instead of the full relative path
+    return final_filename
 
 def cleanup_temp_files(max_age_hours=24):
     """Deletes files in temp directory older than max_age_hours"""

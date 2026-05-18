@@ -1,3 +1,14 @@
+"""
+PURPOSE:
+Standalone Picamera2 single-image capture helper used by hardware test scripts.
+
+RUNTIME ROLE:
+- Developer utility module; not imported by kiosk runtime app.
+
+API ENDPOINTS USED:
+- None.
+"""
+
 from picamera2 import Picamera2
 from datetime import datetime
 import time

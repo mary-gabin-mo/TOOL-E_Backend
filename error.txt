@@ -1,8 +1,0 @@
-[DEBUG  ] [Resources now free] <picamera2.picamera2.Picamera2 object at 0x7ffee4519e80>
-Transaction Confirmed! Date: 2026-02-14
-[UI] Submitting Transaction via APIClient...
-[API] Submitting Transaction: {'user_id': '30113779', 'return_date': '2026-02-14 12:00:00', 'transactions': [{'transaction_id': '20260203_132804-513', 'img_filename': '/home/tool-r/Desktop/TOOL-E/Station/20260203_132804-513.jpg', 'tool_name': 'hot_glue_gun'}]}
-[DEBUG  ] [Starting new HTTP connection (1)] 192.168.1.6:5000
-[DEBUG  ] [http          ]//192.168.1.6:5000 "POST /transaction HTTP/1.1" 404 42
-[API] Transaction Failed: 404 Client Error: Not Found for url: http://192.168.1.6:5000/transaction
-Transaction Failed: Could not record transaction.

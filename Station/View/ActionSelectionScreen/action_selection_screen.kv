@@ -1,10 +1,15 @@
 <ActionSelectionScreen>:
-    md_bg_color: 1, 1, 1, 1  # White background
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1  # White background
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-    MDBoxLayout:
+    BoxLayout:
         orientation: 'vertical'
-        padding: "40dp"
-        spacing: "10dp"
+        padding: "50dp"
+        spacing: "15dp"
         pos_hint: {"center_x": .5, }
 
         # -- Logo Area Placeholder --
@@ -12,7 +17,7 @@
             size_hint_y: 0.65
 
         # # -- Title --
-        # MDLabel:
+        # Label:
         #     text: "TOOL-E Checkout"
         #     halign: "center"
         #     font_style: "H3"
@@ -20,67 +25,76 @@
         #     bold: True
         #     size_hint_y: 0.1
 
-        MDLabel:
+        Label:
             text: "Select Action Type"
             halign: "center"
-            font_style: "H4"
-            theme_text_color: "Secondary"
+            valign: "middle"
+            text_size: self.size
+            font_size: "44sp"
+            color: 0.15, 0.15, 0.15, 1
             bold: True
             size_hint_y: None
-            height: "60dp"
-            padding_top: "10dp"
+            height: "72dp"
 
-        MDBoxLayout:
+        BoxLayout:
             orientation: 'horizontal'
-            padding: "20dp", "10dp"
-            spacing: "40dp"
+            padding: "30dp", "15dp"
+            spacing: "50dp"
             pos_hint: {"center_x": .5}
             size_hint_y: None
-            height: "180dp"
+            height: "220dp"
 
-            MDFillRoundFlatButton:
+            AppButton:
                 text: "BORROW"
-                font_size: "32sp"
+                font_size: "44sp"
                 size_hint_x: 0.6
                 size_hint_y: 0.8
                 pos_hint: {"center_x": .5}
-                md_bg_color: 0.9, 0.17, 0.25, 1  # Red
+                base_color: 0.9, 0.17, 0.25, 1  # Red
+                down_color: 0.75, 0.12, 0.2, 1
+                color: 1, 1, 1, 1
                 on_release: root.select_borrow()
 
-            MDFillRoundFlatButton:
+            # AppButton:
+            #     text: "CANCEL"
+            #     font_size: "28sp"
+            #     # background_normal: ''
+            #     base_color: 0.9, 0.2, 0.2, 1  # Red
+            #     down_color: 0.75, 0.15, 0.15, 1
+            #     color: 1,1,1,1
+            #     on_press: root.cancel_transaction()
+
+            AppButton:
                 text: "RETURN"
-                font_size: "32sp"
+                font_size: "44sp"
                 size_hint_x: 0.6
                 size_hint_y: 0.8
                 pos_hint: {"center_x": .5}
-                md_bg_color: 0.9, 0.17, 0.25, 1  # Red
+                base_color: 0.9, 0.17, 0.25, 1  # Red
+                down_color: 0.75, 0.12, 0.2, 1
+                color: 1, 1, 1, 1
                 on_release: root.select_return()
 
         # -- Spacer --
         Widget:
             size_hint_y: 0.1
 
-        # -- Dev Button --
-        MDFillRoundFlatButton:
-            text: "DEV: List Tools"
-            font_size: "18sp"
-            size_hint: 0.5, 0.08
-            pos_hint: {"center_x": .5}
-            md_bg_color: 0.2, 0.2, 0.2, 1
-            on_release: root.go_to('tool select screen')
-
         # -- Spacer --
         Widget:
             size_hint_y: 0.4
 
         # -- Cancel Button --
-        MDFillRoundFlatButton:
-            text: "Cancel"
-            font_size: "24sp"
-            size_hint: 1, 0.01
+        AppButton:
+            text: "CANCEL"
+            font_size: "36sp"
+            size_hint: 1, 0.12
             pos_hint: {"center_x": .5}
-            md_bg_color: 0.9, 0.17, 0.25, 1  # Red
+            base_color: 0.9, 0.17, 0.25, 1  # Red
+            down_color: 0.75, 0.12, 0.2, 1
+            color: 1, 1, 1, 1
             on_release: root.cancel_transaction()
 
-        # Widget:
-        #     size_hint_y: 0.01
+        # -- Spacer for the footer--
+        Widget:
+            size_hint_y: None
+            height: "84dp"

@@ -1,56 +1,67 @@
 <UserErrorScreen>:
-    md_bg_color: 1, 1, 1, 1  # White background
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1  # White background
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-    MDBoxLayout:
+    BoxLayout:
         orientation: 'vertical'
-        padding: "40dp"
-        spacing: "30dp"
+        padding: "50dp"
+        spacing: "15dp"
         pos_hint: {"center_x": .5, "center_y": .5}
-
-        # -- Logo Area --
-        Image:
-            source: "assets/images/logo_black.png"
-            size_hint_y: 0.3
-            allow_stretch: True
-            keep_ratio: True
-
-        # --- Error Icon ---
-        MDIcon:
-            icon: "alert-circle-outline"
-            halign: "center"
-            theme_text_color: "Custom"
-            text_color: 0.8, 0.2, 0.2, 1  # Red color
-            font_size: "100sp"
-            size_hint_y: 0.3
-
-        # --- Title ---
-        MDLabel:
-            text: "Access Denied"
-            halign: "center"
-            font_style: "H4"
-            theme_text_color: "Custom"
-            text_color: 0.2, 0.2, 0.2, 1
-            bold: True
-            size_hint_y: 0.1
-
-        # --- Dynamic Error Message ---
-        MDLabel:
-            id: error_label
-            text: "Unknown Error Occurred."  # Default text
-            halign: "center"
-            font_style: "H5"
-            theme_text_color: "Secondary"
-            size_hint_y: 0.2
 
         # --- Spacer ---
         Widget:
-            size_hint_y: 0.2
+            size_hint_y: 0.25
+
+        # --- Error Icon ---
+        Label:
+            text: "!"
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+            color: 0.8, 0.2, 0.2, 1  # Red color
+            font_size: "130sp"
+            bold: True
+            size_hint_y: 0.35
+
+        # --- Title ---
+        Label:
+            text: "Access Denied"
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+            font_size: "56sp"
+            color: 0.2, 0.2, 0.2, 1
+            bold: True
+            size_hint_y: 0.12
+
+        # --- Dynamic Error Message ---
+        Label:
+            id: error_label
+            text: "Unknown Error Occurred."  # Default text
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+            font_size: "32sp"
+            color: 0.35, 0.35, 0.35, 1
+            size_hint_y: 0.25
 
         # --- Action Button ---
-        MDFillRoundFlatButton:
-            text: "TRY AGAIN"
-            font_size: "24sp"
-            size_hint: 0.6, 0.15
+        AppButton:
+            text: "RETURN TO HOME PAGE"
+            font_size: "28sp"
+            size_hint_x: 0.7
+            size_hint_y: None
+            height: "70dp"
             pos_hint: {"center_x": .5}
-            md_bg_color: 0.2, 0.6, 0.8, 1  # Standard Blue
+            base_color: 0.2, 0.6, 0.8, 1  # Standard Blue
+            down_color: 0.16, 0.5, 0.68, 1
+            color: 1, 1, 1, 1
             on_release: root.go_to_main()
+
+        # --- Bottom Spacer (pushes button up) ---
+        Widget:
+            size_hint_y: 0.3

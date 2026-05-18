@@ -1,3 +1,11 @@
+"""
+PURPOSE:
+Loads the trained EfficientNet model and performs image inference.
+
+API ENDPOINTS USED:
+- None directly. Called by POST /identify_tool.
+"""
+
 import os
 import json
 import torch

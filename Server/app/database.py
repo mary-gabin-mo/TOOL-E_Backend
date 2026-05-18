@@ -1,3 +1,12 @@
+"""
+PURPOSE:
+Creates and exports SQLAlchemy engine connections for the user database
+(Museum/Makerspace) and local TOOL-E database.
+
+API ENDPOINTS USED:
+- None directly. Router modules import `engine_users` and `engine_tools`.
+"""
+
 import os
 from sqlalchemy import create_engine
 from dotenv import load_dotenv

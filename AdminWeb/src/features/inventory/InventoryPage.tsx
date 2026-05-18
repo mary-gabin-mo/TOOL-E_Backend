@@ -1,6 +1,15 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Plus, ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Loader2, Search } from 'lucide-react';
+/**
+ * PURPOSE:
+ * Inventory management page for browsing tools, sorting/filtering, and
+ * uploading or replacing stock reference images.
+ *
+ * API ENDPOINTS USED:
+ * - GET /tools
+ * - PUT /tools/{tool_id}/stock-image
+ */
+import { useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, ArrowUp, ArrowDown, ArrowUpDown, Loader2, Search, X, ImagePlus, ChevronRight } from 'lucide-react';
 import { AddToolModal } from './AddToolModal';
 import { api } from '../../lib/axios';
 
@@ -15,6 +24,7 @@ interface Tool {
   available_quantity: number;
   consumed_quantity: number;
   trained: boolean;
+  stock_image_b64?: string | null;
 }
 
 type SortKey = 'id' | 'name' | 'available_quantity';
@@ -23,13 +33,31 @@ type SortDirection = 'asc' | 'desc';
 export const InventoryPage = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const queryClient = useQueryClient();
   
   // Fetch Tools
-  const { data: tools = [], isLoading, isError, error } = useQuery<Tool[]>({
+  const { data: tools = [], isLoading, isError } = useQuery<Tool[]>({
     queryKey: ['tools'],
     queryFn: async () => {
       const { data } = await api.get('/tools');
       return data;
+    },
+  });
+
+  const uploadStockImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!selectedTool) throw new Error('No tool selected');
+      const formData = new FormData();
+      formData.append('file', file);
+      await api.put(`/tools/${selectedTool.id}/stock-image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['tools'] });
     },
   });
 
@@ -39,30 +67,9 @@ export const InventoryPage = () => {
     direction: 'asc',
   });
 
-  // Filtering State (Removed Type)
-  /* 
-  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
   const uniqueTypes = useMemo(() => {
-    return Array.from(new Set(tools.map((item) => item.type)));
+    return Array.from(new Set(tools.map((item) => item.type).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }, [tools]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsTypeDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-  */
 
   // Derived Data
   const filteredAndSortedData = useMemo(() => {
@@ -76,7 +83,12 @@ export const InventoryPage = () => {
       );
     }
 
-    // 2. Sort
+    // 2. Filter by Type
+    if (selectedType !== 'all') {
+      data = data.filter((item) => item.type === selectedType);
+    }
+
+    // 3. Sort
     data.sort((a, b) => {
       if (sortConfig.key === 'id') {
         return sortConfig.direction === 'asc'
@@ -95,7 +107,7 @@ export const InventoryPage = () => {
     });
 
     return data;
-  }, [tools, sortConfig, searchQuery]); // Added searchQuery to dependencies
+  }, [tools, sortConfig, searchQuery, selectedType]);
 
   const handleSort = (key: SortKey) => {
     setSortConfig((current) => ({
@@ -152,6 +164,21 @@ export const InventoryPage = () => {
             />
           </div>
 
+          <div className="w-full sm:w-56">
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Tool Types</option>
+              {uniqueTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
@@ -197,6 +224,11 @@ export const InventoryPage = () => {
                 </div>
               </th>
 
+              {/* Tool Type Column */}
+              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Tool Type
+              </th>
+
               {/* Size Column */}
               <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Size
@@ -226,11 +258,19 @@ export const InventoryPage = () => {
               <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Status
               </th>
+
+              <th className="py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">
+                
+              </th>
             </tr>
           </thead>
           <tbody className="">
             {filteredAndSortedData.map((item, index) => (
-              <tr key={`${item.id}-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+              <tr
+                key={`${item.id}-${index}`}
+                className="group border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => setSelectedTool(item)}
+              >
                 <td className="py-4 px-6 text-sm text-gray-500">
                   #{item.id}
                 </td>
@@ -243,6 +283,9 @@ export const InventoryPage = () => {
                       </span>
                     )}
                   </div>
+                </td>
+                <td className="py-4 px-6 text-sm text-gray-500">
+                  {item.type || '-'}
                 </td>
                 <td className="py-4 px-6 text-sm text-gray-500">
                   {item.size || '-'}
@@ -262,6 +305,11 @@ export const InventoryPage = () => {
                     {item.status}
                   </span>
                 </td>
+                <td className="py-4 px-4 text-right">
+                  <span className="inline-flex items-center text-gray-300 group-hover:text-gray-500 transition-colors">
+                    <ChevronRight className="w-4 h-4" />
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -273,6 +321,87 @@ export const InventoryPage = () => {
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
       />
+
+      {selectedTool && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setSelectedTool(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{selectedTool.name}</h3>
+                <p className="text-sm text-gray-500">Tool #{selectedTool.id} • {selectedTool.type}</p>
+              </div>
+              <button
+                onClick={() => setSelectedTool(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="border border-gray-200 rounded-lg bg-gray-50 min-h-[280px] flex items-center justify-center overflow-hidden">
+                {selectedTool.stock_image_b64 ? (
+                  <img
+                    src={`data:image/jpeg;base64,${selectedTool.stock_image_b64}`}
+                    alt={`${selectedTool.name} stock`}
+                    className="max-h-[420px] w-auto object-contain"
+                  />
+                ) : (
+                  <div className="text-sm text-gray-500">No stock image uploaded yet.</div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    uploadStockImageMutation.mutate(file, {
+                      onSuccess: () => {
+                        const refreshed = queryClient
+                          .getQueryData<Tool[]>(['tools'])
+                          ?.find((tool) => tool.id === selectedTool.id);
+                        if (refreshed) {
+                          setSelectedTool(refreshed);
+                        }
+                      },
+                    });
+                    e.currentTarget.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadStockImageMutation.isPending}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 inline-flex items-center gap-2"
+                >
+                  {uploadStockImageMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <ImagePlus className="w-4 h-4" />
+                      {selectedTool.stock_image_b64 ? 'Replace Stock Image' : 'Add Stock Image'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

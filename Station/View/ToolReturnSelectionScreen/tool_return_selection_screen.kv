@@ -1,0 +1,151 @@
+<ReturnToolItem>:
+    orientation: "horizontal"
+    height: root.row_height
+    padding: '14dp', '10dp'
+    spacing: '6dp'
+    size_hint_y: None
+    height: "84dp"
+    canvas.before:
+        Color:
+            rgba: root.bg_color
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [10, 10, 10, 10]
+    canvas.after:
+        Color:
+            rgba: 0.84, 0.84, 0.84, 1
+        Line:
+            width: 1.1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, 10, 10, 10, 10, 100)
+
+    BoxLayout:
+        orientation: "vertical"
+        spacing: '4dp'
+
+        Label:
+            text: root.text
+            color: 0, 0, 0, 1
+            font_size: '22sp'
+            bold: True
+            halign: 'left'
+            valign: 'middle'
+            shorten: True
+            shorten_from: "right"
+            text_size: self.size
+
+        Label:
+            text: root.secondary_text
+            color: 0.36, 0.36, 0.36, 1
+            font_size: '16sp'
+            halign: 'left'
+            valign: 'middle'
+            shorten: True
+            shorten_from: "right"
+            text_size: self.size
+
+<ToolReturnSelectionScreen>:
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: "26dp"
+        spacing: "20dp"
+        pos_hint: {"center_x": .5, "center_y": .5}
+
+        # -- Logo Area Placeholder --
+        Widget:
+            size_hint_y: 0.14
+
+        Label:
+            id: title_label
+            text: "Select Tool to Return"
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+            font_size: "40sp"
+            bold: True
+            color: 0, 0, 0, 1
+            size_hint_y: None
+            height: "68dp"
+
+        # --- Tool List Container ---
+        BoxLayout:
+            orientation: 'vertical'
+            padding: '5dp'
+            size_hint: .96, .78
+            pos_hint: {"center_x": .5}
+            canvas.before:
+                Color:
+                    rgba: 1, 1, 1, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [10, 10, 10, 10]
+                Color:
+                    rgba: 0.4, 0.4, 0.4, 1  # Grey border
+                Line:
+                    rounded_rectangle: (self.x, self.y, self.width, self.height, 10, 10, 10, 10, 100)
+                    width: 1.5
+
+            RecycleView:
+                id: tool_recycle_view
+                viewclass: 'ReturnToolItem'
+                scroll_type: ['bars', 'content']
+                bar_width: '10dp'
+                bar_color: 0.55, 0.55, 0.55, 0.95
+                bar_inactive_color: 0.75, 0.75, 0.75, 0.55
+                RecycleBoxLayout:
+                    default_size: None, dp(84)
+                    default_size_hint: 1, None
+                    size_hint_y: None
+                    height: self.minimum_height
+                    orientation: 'vertical'
+
+        # --- Empty Message (hidden when list has items) ---
+        Label:
+            id: empty_message
+            text: "No unreturned tools found"
+            halign: "center"
+            color: 0.5, 0.5, 0.5, 1
+            font_size: "20sp"
+            opacity: 0
+            size_hint_y: None
+            height: "60dp"
+
+        # --- Bottom Button Row ---
+        BoxLayout:
+            orientation: 'horizontal'
+            spacing: "20dp"
+            size_hint_y: None
+            height: '150dp'
+            pos_hint: {"center_x": .5}
+            padding: '15dp'
+
+            AppButton:
+                text: "BACK"
+                font_size: "32sp"
+                size_hint: 0.4, 1
+                # background_normal: ''
+                base_color: 0.4, 0.4, 0.4, 1  # Back button Grey
+                color: 1, 1, 1, 1
+                on_release: root.go_back()
+
+            AppButton:
+                id: continue_btn
+                text: "CONFIRM RETURN"
+                font_size: "32sp"
+                size_hint: 0.6, 1
+                base_color: 0.2, 0.7, 0.2, 1  # Green
+                color: 1, 1, 1, 1
+                disabled: True
+                on_release: root.confirm_selection()
+
+        Widget:
+            size_hint_y: None
+            height: "84dp"

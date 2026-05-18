@@ -1,3 +1,14 @@
+"""
+PURPOSE:
+Standalone load-cell + camera trigger prototype script.
+
+RUNTIME ROLE:
+- Developer hardware test utility; not imported by kiosk runtime app.
+
+API ENDPOINTS USED:
+- None.
+"""
+
 import time
 import lgpio
 from single_capt import init_camera, take_picture, close_camera

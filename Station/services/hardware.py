@@ -223,13 +223,13 @@ class HardwareManager(EventDispatcher):
 
         current_weight = (raw_val - self.offset)
         
-        # Print status every 10 polls (1 second)
-        if self.poll_counter % 10 == 0:
-            print(
-                f"[LOADCELL] Raw: {raw_val}, Weight: {current_weight}, "
-                f"Threshold: {LOAD_CELL_THRESHOLD}, Stable: {self.stable_reads}/{self.STABLE_READS_REQUIRED}, "
-                f"Armed: {self._load_cell_trigger_armed}, Below: {self._load_cell_below_threshold_reads}"
-            )
+        # # Print status every 10 polls (1 second)
+        # if self.poll_counter % 10 == 0:
+        #     print(
+        #         f"[LOADCELL] Raw: {raw_val}, Weight: {current_weight}, "
+        #         f"Threshold: {LOAD_CELL_THRESHOLD}, Stable: {self.stable_reads}/{self.STABLE_READS_REQUIRED}, "
+        #         f"Armed: {self._load_cell_trigger_armed}, Below: {self._load_cell_below_threshold_reads}"
+        #     )
 
         # Check Threshold
         if current_weight > LOAD_CELL_THRESHOLD:

@@ -91,8 +91,7 @@ class ToolSelectionScreen(BaseScreen):
         
     def _fetch_tools_thread(self):
         app = App.get_running_app()
-        # Force refresh so newly uploaded stock images appear immediately.
-        all_tools = app.api_client.get_tools(force_refresh=True)
+        all_tools = app.api_client.get_tools()
         self._update_ui_with_tools(all_tools)
         
     @mainthread
@@ -157,25 +156,51 @@ class ToolSelectionScreen(BaseScreen):
             self._expanded_tool_id = None
         else:
             self._expanded_tool_id = selected_id
+
+        raw_stock_image = (
+            tool_data.get('stock_image_b64')
+            or tool_data.get('stock_image')
+            or tool_data.get('image_b64')
+        )
         
-        # Visual feedback: highlight selected row in data model
+        # Visual feedback: rebuild row objects so RecycleView applies size changes.
         rv = self.ids.tool_recycle_view
-        for i, item in enumerate(rv.data):
+        selected_preview_source = ""
+        for existing_item in rv.data:
+            existing_tool_id = existing_item.get('tool_data', {}).get('id')
+            if existing_tool_id == selected_id:
+                selected_preview_source = existing_item.get('preview_source', '') or ''
+                break
+
+        if raw_stock_image:
+            if selected_preview_source:
+                print(f"[UI] Stock image available for '{tool_data.get('name')}' (ID: {selected_id})")
+            else:
+                print(f"[UI] Stock image payload exists for '{tool_data.get('name')}' (ID: {selected_id}) but preview could not be decoded")
+        else:
+            print(f"[UI] No stock image for '{tool_data.get('name')}' (ID: {selected_id})")
+
+        updated_data = []
+        for item in rv.data:
+            row = dict(item)
             item_id = item.get('tool_data', {}).get('id')
             has_preview = bool(item.get('preview_source'))
             if item_id == selected_id:
-                rv.data[i]['bg_color'] = [0.86, 0.93, 1, 1]
+                row['bg_color'] = [0.86, 0.93, 1, 1]
                 if self._expanded_tool_id == item_id and has_preview:
-                    rv.data[i]['preview_height'] = self._expanded_preview_height
-                    rv.data[i]['row_height'] = self._base_row_height + self._expanded_preview_height
+                    row['preview_height'] = self._expanded_preview_height
+                    row['row_height'] = self._base_row_height + self._expanded_preview_height
                 else:
-                    rv.data[i]['preview_height'] = 0
-                    rv.data[i]['row_height'] = self._base_row_height
+                    row['preview_height'] = 0
+                    row['row_height'] = self._base_row_height
             else:
-                rv.data[i]['bg_color'] = [1, 1, 1, 1]
-                rv.data[i]['preview_height'] = 0
-                rv.data[i]['row_height'] = self._base_row_height
-        
+                row['bg_color'] = [1, 1, 1, 1]
+                row['preview_height'] = 0
+                row['row_height'] = self._base_row_height
+
+            updated_data.append(row)
+
+        rv.data = updated_data
         rv.refresh_from_data()
 
     def _materialize_preview_image(self, tool_obj):

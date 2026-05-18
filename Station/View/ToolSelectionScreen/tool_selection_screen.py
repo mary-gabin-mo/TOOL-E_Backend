@@ -52,8 +52,6 @@ class ToolSelectionScreen(BaseScreen):
         super().__init__(**kwargs)
         self._expanded_tool_id = None
         self._preview_cache = {}
-        self._expanded_preview_height = 220
-        self._base_row_height = 92
     
     def on_enter (self):
         """Called every time the screen is displayed."""
@@ -122,7 +120,7 @@ class ToolSelectionScreen(BaseScreen):
                     "bg_color": [1, 1, 1, 1],
                     "preview_source": preview_source,
                     "preview_height": 0,
-                    "row_height": self._base_row_height,
+                    "row_height": 92,
                 })
 
             # 4. Add "Other" Option to the bottom
@@ -134,7 +132,7 @@ class ToolSelectionScreen(BaseScreen):
                 "bg_color": [1, 1, 1, 1],
                 "preview_source": "",
                 "preview_height": 0,
-                "row_height": self._base_row_height,
+                "row_height": 92,
             })
             
             tool_rv.data = rv_data
@@ -156,51 +154,25 @@ class ToolSelectionScreen(BaseScreen):
             self._expanded_tool_id = None
         else:
             self._expanded_tool_id = selected_id
-
-        raw_stock_image = (
-            tool_data.get('stock_image_b64')
-            or tool_data.get('stock_image')
-            or tool_data.get('image_b64')
-        )
         
-        # Visual feedback: rebuild row objects so RecycleView applies size changes.
+        # Visual feedback: highlight selected row in data model
         rv = self.ids.tool_recycle_view
-        selected_preview_source = ""
-        for existing_item in rv.data:
-            existing_tool_id = existing_item.get('tool_data', {}).get('id')
-            if existing_tool_id == selected_id:
-                selected_preview_source = existing_item.get('preview_source', '') or ''
-                break
-
-        if raw_stock_image:
-            if selected_preview_source:
-                print(f"[UI] Stock image available for '{tool_data.get('name')}' (ID: {selected_id})")
-            else:
-                print(f"[UI] Stock image payload exists for '{tool_data.get('name')}' (ID: {selected_id}) but preview could not be decoded")
-        else:
-            print(f"[UI] No stock image for '{tool_data.get('name')}' (ID: {selected_id})")
-
-        updated_data = []
-        for item in rv.data:
-            row = dict(item)
+        for i, item in enumerate(rv.data):
             item_id = item.get('tool_data', {}).get('id')
             has_preview = bool(item.get('preview_source'))
             if item_id == selected_id:
-                row['bg_color'] = [0.86, 0.93, 1, 1]
+                rv.data[i]['bg_color'] = [0.86, 0.93, 1, 1]
                 if self._expanded_tool_id == item_id and has_preview:
-                    row['preview_height'] = self._expanded_preview_height
-                    row['row_height'] = self._base_row_height + self._expanded_preview_height
+                    rv.data[i]['preview_height'] = 220
+                    rv.data[i]['row_height'] = 312
                 else:
-                    row['preview_height'] = 0
-                    row['row_height'] = self._base_row_height
+                    rv.data[i]['preview_height'] = 0
+                    rv.data[i]['row_height'] = 92
             else:
-                row['bg_color'] = [1, 1, 1, 1]
-                row['preview_height'] = 0
-                row['row_height'] = self._base_row_height
-
-            updated_data.append(row)
-
-        rv.data = updated_data
+                rv.data[i]['bg_color'] = [1, 1, 1, 1]
+                rv.data[i]['preview_height'] = 0
+                rv.data[i]['row_height'] = 92
+        
         rv.refresh_from_data()
 
     def _materialize_preview_image(self, tool_obj):
@@ -208,12 +180,7 @@ class ToolSelectionScreen(BaseScreen):
         if not isinstance(tool_obj, dict):
             return ""
 
-        # Prefer current API key, with fallbacks for older payload variants.
-        raw_b64 = (
-            tool_obj.get('stock_image_b64')
-            or tool_obj.get('stock_image')
-            or tool_obj.get('image_b64')
-        )
+        raw_b64 = tool_obj.get('stock_image_b64')
         if not raw_b64:
             return ""
 
@@ -242,11 +209,7 @@ class ToolSelectionScreen(BaseScreen):
             ext = ".webp"
 
         try:
-            cleaned = "".join(encoded.split())
-            missing_padding = len(cleaned) % 4
-            if missing_padding:
-                cleaned += "=" * (4 - missing_padding)
-            image_bytes = base64.b64decode(cleaned)
+            image_bytes = base64.b64decode(encoded, validate=True)
         except Exception:
             return ""
 

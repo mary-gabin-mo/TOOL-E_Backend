@@ -52,21 +52,36 @@ class TransactionConfirmScreen(BaseScreen):
     
     return_date = None
     purpose = None # 'Academic Course' or 'Personal Project'
-    
-    def on_enter(self):
-        """Reset state when entering screen."""
-        self.return_date = None
-        self.purpose = None
+
+    def _reset_purpose_ui(self):
+        """Return all purpose controls to their default unselected state."""
+        purpose_buttons = [
+            self.ids.btn_academic,
+            self.ids.btn_personal,
+            self.ids.btn_team,
+            self.ids.btn_research,
+        ]
+        for btn in purpose_buttons:
+            btn.base_color = (0.9, 0.9, 0.9, 1)
+            btn.color = (0, 0, 0, 1)
+
         self.ids.course_code_box.opacity = 0
         self.ids.course_code_box.disabled = True
         self.ids.course_code_box.pos_hint = {'x': 10, 'y': 0}
         self.ids.course_code_input.disabled = True
         self.ids.course_code_input.text = ''
+
         self.ids.team_name_box.opacity = 0
         self.ids.team_name_box.disabled = True
         self.ids.team_name_box.pos_hint = {'x': 10, 'y': 0}
         self.ids.team_name_input.disabled = True
         self.ids.team_name_input.text = ''
+    
+    def on_enter(self):
+        """Reset state when entering screen."""
+        self.return_date = None
+        self.purpose = None
+        self._reset_purpose_ui()
         
         app = App.get_running_app()
         if hasattr(app, 'hardware') and hasattr(app.hardware, 'set_led_state'):

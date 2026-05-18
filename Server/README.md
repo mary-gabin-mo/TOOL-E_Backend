@@ -271,3 +271,54 @@ If model file is missing, ML features remain disabled until model is provided.
 - No auth middleware currently protects route groups.
 - /api/auth/login returns a token but token verification is not enforced server-side yet.
 - A small Server/package.json exists but Python runtime is the primary backend path.
+
+## Deployment (systemd)
+
+Use `systemd` to run the Server as a background service on boot and enable automatic restarts.
+
+1. Create a systemd unit at `/etc/systemd/system/toole-api.service` (adjust paths/user):
+
+```ini
+[Unit]
+Description=TOOL-E FastAPI Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/path/to/TOOL-E/Server
+Environment="PATH=/path/to/TOOL-E/Server/venv/bin"
+ExecStart=/path/to/TOOL-E/Server/venv/bin/python server_entrypoint.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+2. Enable and start the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable toole-api.service
+sudo systemctl start toole-api.service
+```
+
+3. Control & logs:
+
+```bash
+sudo systemctl status toole-api.service
+sudo systemctl restart toole-api.service
+sudo journalctl -u toole-api.service -f
+```
+
+Notes:
+- Replace `/path/to/TOOL-E/Server` and the `User` with your installation paths and runtime user.
+- If you use a virtualenv, point `Environment="PATH=..."` and `ExecStart` to the venv's `bin/python`.
+- For environment variables, create a `Server/.env.local` (loaded by `app/database.py`) or add `Environment=` lines in the unit file.
+- Configure system-level security (firewall, limits) as needed for production.
+
+See the **Development vs Production** section above for guidance on when to use systemd deployment.

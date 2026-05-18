@@ -91,7 +91,8 @@ class ToolSelectionScreen(BaseScreen):
         
     def _fetch_tools_thread(self):
         app = App.get_running_app()
-        all_tools = app.api_client.get_tools()
+        # Force refresh so newly uploaded stock images appear immediately.
+        all_tools = app.api_client.get_tools(force_refresh=True)
         self._update_ui_with_tools(all_tools)
         
     @mainthread
@@ -182,7 +183,12 @@ class ToolSelectionScreen(BaseScreen):
         if not isinstance(tool_obj, dict):
             return ""
 
-        raw_b64 = tool_obj.get('stock_image_b64')
+        # Prefer current API key, with fallbacks for older payload variants.
+        raw_b64 = (
+            tool_obj.get('stock_image_b64')
+            or tool_obj.get('stock_image')
+            or tool_obj.get('image_b64')
+        )
         if not raw_b64:
             return ""
 
